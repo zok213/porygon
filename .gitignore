@@ -1,0 +1,45 @@
+# =========================================================================
+# ROOT GITIGNORE FOR FPGA & MCU PROJECT REPOSITORY (zok213/porygon)
+# =========================================================================
+
+# Large Archives Exceeding GitHub 100MB File Limit
+*.zip
+*.7z
+*.tar.gz
+*.rar
+
+# Keil uVision Build Artifacts & Intermediate Files
+Listings/
+Objects/
+__history/
+*.lst
+*.obj
+*.o
+*.d
+*.crf
+*.axf
+*.elf
+*.hex
+*.bin
+*.htm
+*.map
+*.build_log.htm
+*.lnp
+*.sct
+*._2kp
+
+# Keil User Specific Configuration Files
+*.uvguix.*
+*.uvgui.*
+*.uvoptx.bak
+*.uvprojx.bak
+*.bak
+*.dep
+
+# Editor & OS Temporary Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.tmp
+*.log

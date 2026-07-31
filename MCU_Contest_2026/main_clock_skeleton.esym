@@ -1,0 +1,21 @@
+D G "__PCM__" 0 0 ""5.015""
+D G "__DEVICE__" 0 0 ""
+D G "__DATE__" 0 0 ""17-Jul-26""
+D G "__TIME__" 0 0 ""10:20:43"" "* main.c - Ð?ng h? s? SN32F407 (Keil simulation friendly)"
+C G "" 0 1 2 "*"
+C G "" 0 6 1 "*"
+C G "" 0 6 1 "*"
+C G "" 0 6 1 "*"
+C G "" 0 6 1 "*"
+C G "" 0 6 1 "*"
+C G "" 0 6 1 "*"
+C G "" 0 6 1 "*"
+C G "" 0 6 1 "*"
+C G "" 0 6 1 "*"
+C G "" 0 6 1 "*"
+C G "" 0 6 1 "*"
+E G "MODE_NORMAL" 0 21 "0" `35 
+E G "MODE_SET_HOUR" 0 22 "1" `36 
+E G "MODE_SET_MIN" 0 23 "2" `37 
+E G "MODE_ALARM_SET_HOUR" 0 24 "3" `38 
+E G "MODE_ALARM_SET_MIN" 0 25 "4" `39 

@@ -1,0 +1,10 @@
+*** Error 18 "main_clock_skeleton.c" Line 4(10,66): File can not be opened
+    Not in local "SN32F407.h"
+    Not in local "D:\MCU_Contest_2026\SN32F407.h"
+    Not in last "SN32F407.h"
+    Not in project "D:\MCU_Contest_2026\SN32F407.h"
+    Not in ";D:\Program Files (x86)\PICC\Devices\SN32F407.h"
+    Not in "D:\Program Files (x86)\PICC\Drivers\SN32F407.h"
+*** Error 128 "main_clock_skeleton.c" Line 4(10,17): A #DEVICE required before this line
+      2 Errors,  0 Warnings.
+Build Failed.

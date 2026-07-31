@@ -1,0 +1,39 @@
+# =========================================================================
+# KEIL uVISION MDK-ARM GITIGNORE FILE
+# =========================================================================
+
+# Keil Build Outputs & Intermediate Files
+Listings/
+Objects/
+__history/
+*.lst
+*.obj
+*.o
+*.d
+*.crf
+*.axf
+*.elf
+*.hex
+*.bin
+*.htm
+*.map
+*.build_log.htm
+*.lnp
+*.sct
+*._2kp
+
+# Keil User Specific Configuration Files (Do not commit user GUI state)
+*.uvguix.*
+*.uvgui.*
+*.uvoptx.bak
+*.uvprojx.bak
+*.bak
+*.dep
+
+# Editor & OS Temporary Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.tmp
+*.log
