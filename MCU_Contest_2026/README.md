@@ -2,9 +2,22 @@
 
 ## System Abstract
 
-This document details the production-grade firmware architecture for the **Smart Digital Clock and Alarm System** designed for the **SN32F407_EVK** evaluation board (ARM Cortex-M0 core). 
+This document details the production-grade firmware architecture for the **Smart Digital Clock and Alarm System** running on the **SN32F407_EVK** evaluation board (ARM Cortex-M0 core). 
 
 The implementation applies **Defensive Embedded Programming** principles to guarantee zero-flicker display multiplexing, non-blocking I2C EEPROM storage, deterministic matrix key debouncing, and fault-tolerant finite state machine (FSM) execution.
+
+---
+
+## Competition Evaluation Criteria Breakdown
+
+| Criteria Component | Weight | Implementation Strategy in Source Code |
+| :--- | :--- | :--- |
+| **Basic Digital Clock Functions** | 35% | SysTick $1\text{ms}$ ISR, 7-Segment driver $HH.MM$, $00..23$ hour rollover, $00..59$ minute rollover. |
+| **Alarm Setting & EEPROM** | 15% | I2C0 driver, AT24C02 EEPROM read/write routines, persistent memory across resets. |
+| **Bonus Features** | 10% | 30-second button inactivity timeout auto-rollback, status LED D6 blinking indicator. |
+| **Demo Video Presentation** | 20% | System test flow, edge-case verification, team presentation skills. |
+| **Code & Documentation** | 10% | Defensive programming style, modular file organization, zero compilation warnings. |
+| **Technical Defense Q&A** | 10% | Peripheral register control, race condition prevention, hardware timing defense. |
 
 ---
 
@@ -12,13 +25,13 @@ The implementation applies **Defensive Embedded Programming** principles to guar
 
 | System Block | Target Hardware | MCU Pin Assignment | Electrical Configuration |
 | :--- | :--- | :--- | :--- |
-| Display Bus | 7-Segment Segment Lines (A..G, DP) | `GPIO0 [0..7]` | Push-Pull Output, Active High |
-| Display Driver | 7-Segment Digit Select (D1..D4) | `GPIO1 [9..12]` | Push-Pull Output, Active High |
-| Key Matrix | Matrix Key Row Drivers | `GPIO1 [4..7]` | Open-Drain / Push-Pull Scan Out |
-| Key Matrix | Matrix Key Column Inputs | `GPIO2 [4..7]` | Input with Internal Pull-Up Resistors |
-| Non-Volatile Memory | I2C EEPROM (AT24C02) SCL/SDA | `I2C0` Pins (`GPIO0_10` / `GPIO0_11`) | Open-Drain, External $4.7\text{k}\Omega$ Pull-up |
-| Audio Output | Piezo Electric Buzzer | `GPIO3 [0]` | NPN Transistor Driver, Active High |
-| Status Indicator | Mode Status LED (Board D6) | `GPIO3 [8]` | Push-Pull Output, Active Low |
+| **Display Bus** | 7-Segment Segment Lines (A..G, DP) | `GPIO0 [0..7]` | Push-Pull Output, Active High |
+| **Display Driver** | 7-Segment Digit Select (D1..D4) | `GPIO1 [9..12]` | Push-Pull Output, Active High |
+| **Key Matrix** | Matrix Key Row Drivers | `GPIO1 [4..7]` | Open-Drain / Push-Pull Scan Out |
+| **Key Matrix** | Matrix Key Column Inputs | `GPIO2 [4..7]` | Input with Internal Pull-Up Resistors |
+| **Non-Volatile Memory** | I2C EEPROM (AT24C02) SCL/SDA | `I2C0` (`GPIO0_10` / `GPIO0_11`) | Open-Drain, External $4.7\text{k}\Omega$ Pull-up |
+| **Audio Output** | Piezo Electric Buzzer | `GPIO3 [0]` | NPN Transistor Driver, Active High |
+| **Status Indicator** | Mode Status LED (Board D6) | `GPIO3 [8]` | Push-Pull Output, Active Low |
 
 ---
 
@@ -57,13 +70,13 @@ Uninitialized or corrupted EEPROM cells return `0xFF` ($255$). If referenced dir
 
 ```mermaid
 flowchart TD
-    A[EEPROM Read Byte 0x00] --> B{Magic Signature == 0xA5?}
-    B -- Valid --> C[Read Alarm Hour Byte 0x01 & Min Byte 0x02]
-    B -- Invalid --> D[Initialize Default Values: 00:00]
-    C --> E{Hour <= 23 AND Min <= 59?}
-    E -- Valid --> F[Load Values into Active System Memory]
+    A["EEPROM Read Byte 0x00"] --> B{"Magic Signature == 0xA5?"}
+    B -- Valid --> C["Read Alarm Hour Byte 0x01 & Min Byte 0x02"]
+    B -- Invalid --> D["Initialize Default Values: 00:00"]
+    C --> E{"Hour <= 23 AND Min <= 59?"}
+    E -- Valid --> F["Load Values into Active System Memory"]
     E -- Invalid --> D
-    D --> G[Write Magic 0xA5 & Default 00:00 to EEPROM]
+    D --> G["Write Magic 0xA5 & Default 00:00 to EEPROM"]
     G --> F
 ```
 
@@ -75,9 +88,9 @@ Background time calculation must remain decoupled from user interface operations
 ```mermaid
 sequenceDiagram
     autonumber
-    participant HW as SysTick ISR (1ms)
-    participant Master as Master Clock RAM (time_sec, time_min, time_hour)
-    participant UI as UI Shadow Buffer (edit_h, edit_m)
+    participant ISR as "SysTick ISR (1ms)"
+    participant Master as "Master Clock RAM (time_sec, time_min, time_hour)"
+    participant UI as "UI Shadow Buffer (edit_h, edit_m)"
     
     ISR->>Master: Increment Master RTC continuous (Sec -> Min -> Hour)
     Note over UI: User presses SW6 / SW10 to modify Edit Buffer
@@ -99,9 +112,9 @@ Multiplexed displays suffer from crosstalk ghosting if segment lines transition 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant ISR as SysTick Interrupt
-    participant DigitBus as GPIO1 Digit Lines (9..12)
-    participant SegBus as GPIO0 Segment Lines (0..7)
+    participant ISR as "SysTick Interrupt (1ms)"
+    participant DigitBus as "GPIO1 Digit Lines (Pins 9..12)"
+    participant SegBus as "GPIO0 Segment Lines (Pins 0..7)"
 
     ISR->>DigitBus: Phase 1: Clear All Digit Enable Lines (Blanking)
     ISR->>SegBus: Phase 2: Write Target Digit Segment Data to Bus
@@ -118,10 +131,10 @@ MCU_Contest_2026/
 ├── README.md                    # Firmware Architecture & Implementation Document
 ├── main_clock_skeleton.c        # Main C Source Code
 ├── Clock_Simulation.uvprojx     # Keil uVision Project File
-├── Clock_Simulation.uvoptx      # Keil uVision Option File
+├── Clock_Simulation.uvoptx     # Keil uVision Option File
 ├── debug.ini                    # Debug Configuration Script
 ├── EventRecorderStub.scvd       # Event Recorder View Component
-├── Docs/                        # Documentation Folder
+├── Docs/                        # Documentation Thư Mục
 │   └── ĐỀ THI MCU 2026.pdf      # MCU Specification Reference
 └── RTE/                         # Run-Time Environment Drivers
 ```

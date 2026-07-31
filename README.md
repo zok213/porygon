@@ -1,104 +1,83 @@
-# Porygon: FPGA and MCU Embedded System Design Framework (Da Nang Contest 2026)
+# FPGA and MCU System Design Framework (Da Nang Contest 2026)
 
-## Repository Metadata
+## System Abstract and Competition Overview
 
-- **Repository**: `zok213/porygon`
-- **Target Microcontroller**: SN32F407 (ARM Cortex-M0 Core @ 48MHz)
-- **Target FPGA Devices**: Gowin GW1N Series (GW1N-UV1P5 / GW1NSR-LV4C)
-- **IDE & Toolchain**: Keil MDK-ARM uVision v5.x / Gowin EDA
-- **Continuous Integration**: GitHub Actions Workflows (`.github/workflows/ci.yml`)
+This repository contains the complete engineering specification, technical documentation, architectural models, and firmware implementation for the **Da Nang FPGA & MCU Design Competition 2026**. 
 
----
-
-## Document Overview
-
-This repository contains the complete engineering specification, source code implementations, hardware abstraction drivers, continuous integration configuration, and reference documentation for both the **Microcontroller (MCU)** and **Field-Programmable Gate Array (FPGA)** competition tracks of the **Da Nang FPGA & MCU Design Competition 2026**.
-
-The codebase enforces **Defensive Embedded Programming**, deterministic Real-Time Clock execution, zero-flicker 7-segment display multiplexing, non-blocking I2C memory access, and generic Verilog/VHDL logic design.
+The workspace covers two distinct hardware competition tracks:
+1. **Microcontroller (MCU) Track**: Production-grade ARM Cortex-M0 C firmware (`main_clock_skeleton.c`) running on the **SN32F407_EVK** evaluation platform, featuring a 24-hour digital clock, matrix key processing, non-volatile I2C EEPROM storage, anti-ghosting 7-segment display drivers, and a fault-tolerant Finite State Machine (FSM).
+2. **Field-Programmable Gate Array (FPGA) Track**: Platform-independent Register-Transfer Level (RTL) Verilog design for **Gowin GW1N** FPGAs (Kiwi 1P5 / Kiwi Nano 4K), incorporating a 50MHz IP Core PLL, button debouncers, 3-mode breathing PWM generator, UART TX telemetry ($115200\text{ bps}$), and top-level supervisor FSM.
 
 ---
 
-## Repository Structure and Directory Layout
+## Competition Scoring and Evaluation Matrix
+
+The official competition rubric evaluates solutions across six technical criteria:
+
+| Evaluation Component | Weight | Target Functionality & Assessment Focus |
+| :--- | :--- | :--- |
+| **Basic Digital Clock Functions** | 35% | GPIO configuration, SysTick $1\text{ms}$ Timer ISR, 7-Segment multiplexing $HH.MM$, $00..23$ hour rollover, $00..59$ minute rollover. |
+| **Alarm Setting & Persistent Memory** | 15% | I2C0 driver, AT24C02 EEPROM read/write routines, alarm hour/minute persistence across power resets. |
+| **Bonus Features** | 10% | 30-second button inactivity timeout auto-rollback, status LED D6 blinking indicator during alarm edit modes. |
+| **Technical Video Demonstration** | 20% | Functionality verification flow, edge-case demonstration, presentation clarity. |
+| **Code & Document Architecture** | 10% | Defensive programming style, modular file organization, memory safety, hardware abstraction. |
+| **Q&A Technical Defense** | 10% | Deep hardware understanding, race condition mitigation, register-level peripheral control. |
+
+---
+
+## Workspace Directory and File Inventory
 
 ```
-porygon/
-├── .github/
-│   └── workflows/
-│       └── ci.yml                                        # GitHub Actions Automated CI/CD Pipeline
-├── .gitignore                                            # Root exclusion rules for large archives & build artifacts
-├── README.md                                             # Root Architectural & System Specification
-├── ĐỀ THI MCU 2026.pdf                                   # MCU Competition Track Specification Document
-├── ĐỀ THI FGPA 2026.docx.pdf                             # FPGA Competition Track Specification Document
+FPGA_MCU_Design_2026/
+├── README.md                                             # Master System Specification & Architecture Documentation
+├── ĐỀ THI MCU 2026.pdf                                   # Official MCU Competition Track Specification
+├── ĐỀ THI FGPA 2026.docx.pdf                             # Official FPGA Competition Track Specification
 ├── Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v (1).pdf # Gowin FPGA Design Handbook Reference
-└── MCU_Contest_2026/                                     # Keil uVision Firmware Sub-Repository
+├── [Đà Nẵng Contest] MCU - SN32F407 -20260731T140557Z-1-001.zip # Official Contest SDK & Board Driver Package
+└── MCU_Contest_2026/                                     # Keil uVision Firmware Project Sub-Repository
     ├── .gitignore                                        # Toolchain build output exclusion rules
-    ├── README.md                                         # Sub-repository technical specification
+    ├── README.md                                         # MCU Firmware Specification Document
     ├── main_clock_skeleton.c                             # Production C firmware source code
     ├── Clock_Simulation.uvprojx                          # Keil MDK-ARM Project Configuration
     ├── Clock_Simulation.uvoptx                           # Keil MDK-ARM Option Configuration
-    ├── debug.ini                                         # Hardware Debug Initialization Script
+    ├── debug.ini                                         # Hardware Debug Script Configuration
     ├── EventRecorderStub.scvd                            # Keil Event Recorder System View
-    ├── Docs/                                             # Embedded PDF documentation archive
+    ├── Docs/                                             # Technical document archive
     │   └── ĐỀ THI MCU 2026.pdf                           # Embedded copy of MCU specification
-    └── RTE/                                              # Run-Time Environment CMSIS drivers
+    └── RTE/                                              # CMSIS Run-Time Environment drivers
 ```
 
 ---
 
-## Continuous Integration and Automated Pipeline (CI/CD)
-
-The repository integrates a GitHub Actions CI/CD workflow defined in `.github/workflows/ci.yml`. Every `push` and `pull_request` to `main` executes automated validation:
-
-```mermaid
-flowchart LR
-    PushEvent[Git Push / Pull Request] --> CI[GitHub Actions Pipeline]
-    
-    subgraph Job1 [Firmware Static Analysis Job]
-        CI --> Checkout1[Checkout Code]
-        Checkout1 --> Toolchain[Install gcc-arm-none-eabi & cppcheck]
-        Toolchain --> StructCheck[Verify MCU Project Files]
-        StructCheck --> StaticCheck[Run Cppcheck Static Analysis]
-        StaticCheck --> SyntaxCheck[ARM Cortex-M0 Syntax Compile Check]
-    end
-
-    subgraph Job2 [Documentation Check Job]
-        CI --> Checkout2[Checkout Code]
-        Checkout2 --> DocCheck[Verify Mandatory README & PDF Files]
-    end
-
-    Job1 --> BuildResult[Pipeline Status: Success / Failure]
-    Job2 --> BuildResult
-```
-
----
-
-## Hardware Architecture Block Diagram
+## Overall System Architecture Diagram
 
 ```mermaid
 graph TD
-    subgraph MCU_System_SN32F407 [MCU System Track: ARM Cortex-M0 SN32F407]
-        MCU_Core[SN32F407 Core @ 48MHz]
-        SysTick[SysTick Timer ISR 1ms]
-        KeyMatrix[4x4 Keypad Matrix]
-        Display7Seg[4-Digit 7-Segment LED Display]
-        EEPROM_I2C[AT24C02 EEPROM via I2C0]
-        Buzzer[Piezo Buzzer GPIO3_0]
+    subgraph MCU_System ["MCU System Track: ARM Cortex-M0 SN32F407"]
+        MCU_Core["SN32F407 Core @ 48MHz"]
+        SysTick["SysTick Timer ISR (1ms)"]
+        KeyMatrix["4x4 Keypad Matrix (SW3, SW6, SW10, SW16)"]
+        Display7Seg["4-Digit 7-Segment LED Display (HH.MM)"]
+        EEPROM_I2C["AT24C02 EEPROM via I2C0"]
+        Buzzer["Piezo Buzzer (GPIO3_0)"]
+        LED_D6["Status LED D6 (GPIO3_8)"]
 
         MCU_Core --> SysTick
         SysTick --> Display7Seg
         KeyMatrix --> MCU_Core
         MCU_Core <--> EEPROM_I2C
         MCU_Core --> Buzzer
+        MCU_Core --> LED_D6
     end
 
-    subgraph FPGA_System_Gowin [FPGA System Track: Gowin GW1N]
-        FPGA_Clock[Onboard Clock 24MHz / 27MHz]
-        PLL_Module[Gowin IP Core PLL -> 50MHz]
-        Debounce_Mod[Key Debounce Module]
-        FSM_Control[System Supervisor FSM]
-        PWM_Mod[3-Mode Breathing PWM Generator]
-        UART_TX[UART Transmitter @ 115200 bps]
-        LED_Output[Board LED Output]
+    subgraph FPGA_System ["FPGA System Track: Gowin GW1N"]
+        FPGA_Clock["Onboard Oscillator (24MHz / 27MHz)"]
+        PLL_Module["Gowin IP Core PLL (Output 50MHz)"]
+        Debounce_Mod["Key Debouncer (1-Cycle Pulse)"]
+        FSM_Control["Supervisor FSM Controller"]
+        PWM_Mod["3-Mode Breathing PWM Generator"]
+        UART_TX["UART Transmitter (115200 bps, 8N1)"]
+        LED_Output["Board LED Output"]
 
         FPGA_Clock --> PLL_Module
         PLL_Module --> FSM_Control
@@ -113,28 +92,30 @@ graph TD
 
 ---
 
-## MCU Subsystem Architecture (SN32F407)
+## MCU Subsystem Specification and Source Code Structure
 
-### Hardware Pinout Mapping (SN32F407_EVK)
+### 1. Hardware Pinout & Peripheral Configuration (SN32F407_EVK)
 
-| Function | MCU Register / Pin | Hardware Interface | Electrical Signal |
+| Peripheral Block | MCU Register / Pin | Hardware Mapping | Electrical Interface & Mode |
 | :--- | :--- | :--- | :--- |
-| Segment Bus (A..G, DP) | `GPIO0 [0..7]` | 7-Segment Segment Lines | Push-Pull Output, Active High |
-| Digit Drivers (D1..D4) | `GPIO1 [9..12]` | Multiplexing Select Pins | Push-Pull Output, Active High |
-| Key Matrix Rows | `GPIO1 [4..7]` | Keypad Scan Drivers | Open-Drain / Push-Pull Scan Out |
-| Key Matrix Columns | `GPIO2 [4..7]` | Keypad Input Lines | Input with Internal Pull-Up Resistors |
-| I2C Bus SCL | `GPIO0 [10]` | AT24C02 EEPROM Clock | Open-Drain, External $4.7\text{k}\Omega$ Pull-up |
-| I2C Bus SDA | `GPIO0 [11]` | AT24C02 EEPROM Data | Open-Drain, External $4.7\text{k}\Omega$ Pull-up |
-| Buzzer Signal | `GPIO3 [0]` | Piezo Electric Buzzer | NPN Transistor Switch Active High |
-| Mode LED | `GPIO3 [8]` | Board LED D6 | Push-Pull Output, Active Low |
+| **Display Segment Bus** | `GPIO0 [0..7]` | 7-Segment Lines (A..G, DP) | Push-Pull Output, Active High Bus |
+| **Digit Driver Bus** | `GPIO1 [9..12]` | Digit Select (D1..D4) | Push-Pull Output, Active High Multiplexing |
+| **Keypad Output Rows** | `GPIO1 [4..7]` | Key Scan Output Lines | Output Low Scan Driving |
+| **Keypad Input Cols** | `GPIO2 [4..7]` | Key Read Lines | Input with Internal Pull-Up Resistors |
+| **I2C0 SCL** | `GPIO0 [10]` | AT24C02 EEPROM Clock | Open-Drain, External $4.7\text{k}\Omega$ Pull-up |
+| **I2C0 SDA** | `GPIO0 [11]` | AT24C02 EEPROM Data | Open-Drain, External $4.7\text{k}\Omega$ Pull-up |
+| **Buzzer Driver** | `GPIO3 [0]` | Piezo Buzzer | NPN Transistor Driver, Active High |
+| **Mode Indicator** | `GPIO3 [8]` | Board LED D6 | Active Low Output Driver |
 
 ---
 
-### System Finite State Machine (FSM) Diagram
+### 2. Finite State Machine (FSM) State Diagram
+
+The system operates across 5 primary states controlled by `SW3` (Time Setup), `SW16` (Alarm Setting), and a $30\text{s}$ inactivity timer:
 
 ```mermaid
 stateDiagram-v2
-    [*] --> MODE_NORMAL : System Power On / Restore Memory
+    [*] --> MODE_NORMAL : System Reset / Restore Memory
     
     state MODE_NORMAL {
         [*] --> Clock_Running
@@ -158,139 +139,124 @@ stateDiagram-v2
 
 ---
 
-### Anti-Ghosting 7-Segment Display Timing Diagram
+### 3. Anti-Ghosting 7-Segment Multiplexing Timing Sequence
+
+Multiplexed displays exhibit phantom ghost digits if segment bus values change while digit select lines remain asserted. The firmware resolves this by executing a 3-phase timing sequence inside the $1\text{ms}$ SysTick interrupt:
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant ISR as SysTick Interrupt (1ms)
-    participant Digit as GPIO1 Digit Select Pins
-    participant Seg as GPIO0 Segment Data Pins
+    participant ISR as "SysTick Interrupt (1ms)"
+    participant Digit as "GPIO1 Digit Lines (Pins 9..12)"
+    participant Seg as "GPIO0 Segment Lines (Pins 0..7)"
 
-    ISR->>Digit: Phase 1: Blanking (De-assert GPIO1 Pins 9..12 to 0x00)
-    ISR->>Seg: Phase 2: Load Data (Write GPIO0 Pins 0..7 with Seg Pattern)
-    ISR->>Digit: Phase 3: Enable Target Digit (Assert Active GPIO1 Pin High)
+    ISR->>Digit: Phase 1: Blanking (Set GPIO1 Pins 9..12 to Low)
+    ISR->>Seg: Phase 2: Load Segment Pattern (Write GPIO0 Pins 0..7)
+    ISR->>Digit: Phase 3: Assert Target Digit (Set GPIO1 Pin High)
 ```
 
 ---
 
-### Memory Validation and Data Integrity Flowchart
+### 4. EEPROM Data Validation & Fault Tolerance Flowchart
+
+Fresh or unformatted EEPROM memory cells contain `0xFF` ($255$). Indexing arrays with un-clamped values (`seg7[255/10]`) causes memory corruptions. The system validates an `EEPROM_MAGIC_KEY` ($0xA5$) signature and applies strict numerical boundary clamping ($0 \le \text{Hour} \le 23, 0 \le \text{Min} \le 59$).
 
 ```mermaid
 flowchart TD
-    Start([System Power On / Reset]) --> ReadHeader[Read Byte 0x00: EEPROM Magic Signature]
-    ReadHeader --> CheckMagic{Magic Byte == 0xA5?}
+    Start(["System Power On / Reset"]) --> ReadHeader["Read Byte 0x00: EEPROM Magic Signature"]
+    ReadHeader --> CheckMagic{"Magic Byte == 0xA5?"}
     
-    CheckMagic -- Yes --> ReadData[Read Byte 0x01: Alarm Hour, Byte 0x02: Alarm Min]
-    CheckMagic -- No --> InitDefaults[Corrupted / Fresh EEPROM Detected]
+    CheckMagic -- Yes --> ReadData["Read Byte 0x01: Alarm Hour, Byte 0x02: Alarm Min"]
+    CheckMagic -- No --> InitDefaults["Corrupted / Unformatted EEPROM"]
     
-    ReadData --> ValidateRange{Hour <= 23 AND Min <= 59?}
-    ValidateRange -- Yes --> ApplySettings[Load Alarm Configuration into Master RAM]
+    ReadData --> ValidateRange{"Hour <= 23 AND Min <= 59?"}
+    ValidateRange -- Yes --> ApplySettings["Load Settings into Master RAM"]
     ValidateRange -- No --> InitDefaults
     
-    InitDefaults --> SetZero[Set Alarm Hour = 0, Alarm Min = 0]
-    SetZero --> WriteEEPROM[Write Magic 0xA5, Hour 0, Min 0 to EEPROM]
+    InitDefaults --> SetZero["Set Alarm Hour = 0, Alarm Min = 0"]
+    SetZero --> WriteEEPROM["Write Magic 0xA5, Hour 0, Min 0 to EEPROM"]
     WriteEEPROM --> ApplySettings
-    ApplySettings --> SystemReady([System Operates in MODE_NORMAL])
+    ApplySettings --> SystemReady(["System Operates in MODE_NORMAL"])
 ```
 
 ---
 
-## FPGA Subsystem Architecture (Gowin GW1N)
+## FPGA Subsystem Specification (Gowin GW1N)
 
-### FPGA Platform Hardware Specifications
+### 1. Board Target Hardware Comparison
 
-| Hardware Parameter | Platform A (Kiwi 1P5) | Platform B (Kiwi Nano 4K) |
+| Hardware Parameter | Platform Option A (Kiwi 1P5) | Platform Option B (Kiwi Nano 4K) |
 | :--- | :--- | :--- |
-| FPGA Device | Gowin GW1N-UV1P5 | Gowin GW1NSR-LV4C |
-| Package Type | QN48X | MG64P |
-| Logic Elements (LUTs) | 1,152 | 4,608 |
-| Target System Clock | 50.0 MHz via Gowin PLL Core | 50.0 MHz via Gowin PLL Core |
-| Telemetry Interface | GWU2 USB-to-UART Bridge | GWU2 USB-to-UART Bridge |
-| UART Parameters | 115200 bps, 8N1 | 115200 bps, 8N1 |
+| **FPGA Chip** | Gowin GW1N-UV1P5 | Gowin GW1NSR-LV4C |
+| **Package** | QN48X | MG64P |
+| **Logic Resources** | 1,152 LUTs | 4,608 LUTs |
+| **Input Oscillator** | 24MHz / 27MHz Onboard Clock | 24MHz / 27MHz Onboard Clock |
+| **Internal Clock** | 50.0 MHz (Configured via IP Core PLL) | 50.0 MHz (Configured via IP Core PLL) |
+| **UART Connection** | GWU2 USB-to-UART Bridge | GWU2 USB-to-UART Bridge |
 
 ---
 
-### FPGA Signal Processing Flowchart
+### 2. FPGA RTL Logic Flowchart
 
 ```mermaid
 flowchart LR
-    CLK_IN[Onboard Oscillator] --> PLL[Gowin PLL Core]
-    PLL -->|50MHz Clock| SYS_CLK[Global Clock Network]
+    CLK_IN["Onboard Clock (24MHz / 27MHz)"] --> PLL["Gowin PLL Core"]
+    PLL -->|"50MHz Clock"| SYS_CLK["Global System Clock Bus"]
 
-    BTN1[Button 1 Input] --> DEB1[Debounce Module 1]
-    BTN2[Button 2 Input] --> DEB2[Debounce Module 2]
+    BTN1["Button 1 Input"] --> DEB1["Debounce Module 1"]
+    BTN2["Button 2 Input"] --> DEB2["Debounce Module 2"]
 
-    DEB1 -->|Pulse Output| FSM[Supervisor FSM]
-    DEB2 -->|Pulse Output| FSM
+    DEB1 -->|"1-Cycle Pulse"| FSM["Supervisor FSM"]
+    DEB2 -->|"1-Cycle Pulse"| FSM
 
-    FSM -->|Select Mode: LOW / HIGH / AUTO| PWM[PWM Generator]
-    FSM -->|Trigger Message| UART[UART TX Module 115200bps]
+    FSM -->|"Mode: LOW / HIGH / AUTO"| PWM["3-Mode PWM Generator"]
+    FSM -->|"Trigger ASCII String"| UART["UART Transmitter (115200 bps)"]
 
-    PWM -->|Breathing Signal| LED[Board LED Output]
-    UART -->|Serial Telemetry| TX[UART_TX Pin]
+    PWM -->|"Breathing Output"| LED["Board LED Output"]
+    UART -->|"Serial Data"| TX_PIN["UART_TX Output Pin"]
 ```
 
 ---
 
-## Technical Comparison Matrix
+### 3. FSM Telemetry Output Protocol
 
-| Subsystem Module | Naive Implementation | Production-Grade Engineering Architecture |
+The FPGA supervisor state machine emits ASCII status strings over UART at $115200\text{ bps}$ ($8\text{N}1$) upon state transitions:
+
+| System Event | FSM State Transition | Serial ASCII Output String | LED PWM Behavior |
+| :--- | :--- | :--- | :--- |
+| Power Reset | Startup $\rightarrow$ State 1 | `"MODE: LOW \r\n"` | Fixed 25% Duty Cycle (Dim) |
+| Press Button 1 | State 1 $\leftrightarrow$ State 2 | `"MODE: LOW \r\n"` / `"MODE: HIGH \r\n"` | 25% Duty $\leftrightarrow$ 100% Duty (Max Brightness) |
+| Press Button 2 | Any State $\rightarrow$ State 3 | `"MODE: AUTO \r\n"` | Breathing Effect ($0\% \rightarrow 100\% \rightarrow 0\%$ over $2.0\text{s}$) |
+| Press Button 1 (in AUTO) | State 3 $\rightarrow$ State 1 | `"MODE: LOW \r\n"` | Returns to Fixed 25% Duty Cycle |
+
+---
+
+## Technical Design Comparisons
+
+### Comparison 1: Naive Code vs. Production Engineering Architecture
+
+| Subsystem Module | Naive Implementation | Production Engineering Architecture |
 | :--- | :--- | :--- |
-| **EEPROM Read** | Unchecked read; crashes when processing unformatted `0xFF` memory. | Magic Byte validation ($0xA5$) + Range clamping ($0..23$, $0..59$). |
-| **Time Maintenance** | Seconds counter paused during edit mode, causing clock drift. | Continuous background SysTick RTC counter; UI shadow edit buffer. |
-| **Alarm Trigger** | Polling equality check; multiple re-triggers per minute. | Edge-triggered single-shot latch (`alarm_triggered_this_minute`). |
-| **Display Queting** | Direct pin mutation; severe digit ghosting bleed. | 3-Phase timing sequence (Blanking $\rightarrow$ Data Load $\rightarrow$ Enable Digit). |
-| **Key Debouncing** | Blocking software delay `delay_ms(20)`; causes display jitter. | Integrator filter with consecutive sample validation (5ms window). |
-| **Watchdog Supervision** | Fed inside timer ISR; fails to reset if main loop freezes. | Super-loop health check; fed exclusively in main loop cycle. |
+| **EEPROM Initialization** | Direct memory read; system crashes on unformatted `0xFF` data. | Magic Byte validation ($0xA5$) + Range clamping ($0..23$, $0..59$). |
+| **Clock Timekeeping** | Seconds counter halted during user edit state, causing time drift. | Uninterrupted SysTick RTC background ticker; UI shadow edit variables. |
+| **Alarm Match** | Polling equality check; triggers thousands of times per minute. | Edge-triggered single-shot latch (`alarm_triggered_this_minute`). |
+| **7-Segment Display** | Direct pin mutation; causes visual digit ghosting bleed. | 3-Phase timing sequence (Blanking $\rightarrow$ Data Load $\rightarrow$ Enable Digit). |
+| **Key Processing** | Software delay `delay_ms(20)`; blocks CPU and freezes display refresh. | Integrator filter with consecutive sample confirmation (5ms window). |
+| **EEPROM Write** | Blocking I2C polling delay ($5\text{ms}$); causes display flicker. | Asynchronous state machine or SysTick-decoupled execution context. |
 
 ---
 
-## Git Workflow & Remote Repository Setup
+### Comparison 2: Hardware Interfacing Paradigms
 
-### Initializing Local Git Repository and Committing
-
-```bash
-# Navigate to workspace root
-cd /d/FPGA&MCU
-
-# Initialize Git
-git init
-
-# Add all files (excluding large zip archives handled by .gitignore)
-git add .
-
-# Create initial commit
-git commit -m "feat: Initial release of Porygon FPGA and MCU framework (Da Nang Contest 2026)"
-
-# Rename default branch to main
-git branch -M main
-
-# Add remote origin for repository zok213/porygon
-git remote add origin https://github.com/zok213/porygon.git
-
-# Push to GitHub main branch
-git push -u origin main
-```
-
----
-
-## Build and Deployment Protocols
-
-### Microcontroller Target (Keil MDK-ARM)
-1. Open `MCU_Contest_2026/Clock_Simulation.uvprojx` in **Keil MDK-ARM uVision v5.x**.
-2. Select target device `SN32F407`.
-3. Press `F7` to rebuild target. Ensure build completes with `0 Error(s), 0 Warning(s)`.
-4. Connect **SN32F407_EVK** board via CMSIS-DAP debugger and press `F8` to flash.
-
-### FPGA Target (Gowin EDA)
-1. Launch **Gowin EDA**.
-2. Open target project for `GW1N-UV1P5` or `GW1NSR-LV4C`.
-3. Synthesize RTL and run Floorplanner for physical pin constraint assignment (`.cst`).
-4. Generate Bitstream (`.fs`) and program target SRAM/Flash using Gowin Programmer.
+| Performance Metric | Blocking Polling Paradigm | Non-Blocking ISR / FSM Paradigm |
+| :--- | :--- | :--- |
+| **CPU Utilization** | High ($99\%$ spent in idle delay loops) | Extremely Low (CPU processes tasks in $<1\%$ time) |
+| **Display Flicker** | High (Noticeable flicker during I/O delays) | Zero (Deterministic $1\text{ms}$ refresh rate) |
+| **Button Responsiveness** | Variable ($20\text{ms}$ to $500\text{ms}$ latency) | Instantaneous ($< 1\text{ms}$ reaction latency) |
+| **Fault Recovery** | Susceptible to total bus lockup | Self-healing via Watchdog supervision |
 
 ---
 
 ## License
 
-Distributed under the **MIT License**. Maintained for **zok213/porygon**.
+Distributed under the **MIT License**. Maintained for the **Da Nang FPGA & MCU Design Competition 2026**.
