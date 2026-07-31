@@ -35,6 +35,36 @@ The implementation applies **Defensive Embedded Programming** principles to guar
 
 ---
 
+## Memory Architecture Map
+
+```
+SN32F407 Internal Flash Memory Map (64 KB):
++-----------------------+ 0x0000_0000
+| Vector Table & Reset  | 
++-----------------------+ 0x0000_00C0
+| Program Code (.text)  |
++-----------------------+ 0x0000_FFFF
+
+SN32F407 Internal SRAM Memory Map (8 KB):
++-----------------------+ 0x2000_0000
+| Globals & Static RAM  |
++-----------------------+ 0x2000_0400
+| Call Stack & Heap     |
++-----------------------+ 0x2000_1FFF
+
+External I2C EEPROM (AT24C02) Memory Map (Address 0xA0):
++------+-----------------------+---------------------------------------+
+| Byte | Field Name            | Functional Description                |
++------+-----------------------+---------------------------------------+
+| 0x00 | Magic Header          | Signature byte (Must equal 0xA5)      |
+| 0x01 | Alarm Hour            | Stored Alarm Hour (Range: 0..23)      |
+| 0x02 | Alarm Minute          | Stored Alarm Minute (Range: 0..59)    |
+| 0x03 | Checksum              | Validation XOR Checksum               |
++------+-----------------------+---------------------------------------+
+```
+
+---
+
 ## System Finite State Machine (FSM) Diagram
 
 ```mermaid
@@ -123,20 +153,50 @@ sequenceDiagram
 
 ---
 
-## Sub-Repository Directory Organization
+### Principle 5: Matrix Key Debouncing Flowchart
 
+```mermaid
+flowchart TD
+    ScanStart(["Matrix Key Scan Triggered (Every 1ms)"]) --> DriveRow["Assert Active Row Low (GPIO1 Pins 4..7)"]
+    DriveRow --> ReadCol["Read Column Data Bus (GPIO2 Pins 4..7)"]
+    ReadCol --> KeyCheck{"Key Detected?"}
+
+    KeyCheck -- Yes --> FilterIntegrator{"5 Consecutive Samples Equal?"}
+    KeyCheck -- No --> ResetIntegrator["Reset Debounce Counter to 0"]
+
+    FilterIntegrator -- Yes --> SingleShotLock{"Key Previously Released?"}
+    FilterIntegrator -- No --> SampleWait["Increment Debounce Counter"]
+
+    SingleShotLock -- Yes --> RegisterKey["Emit Debounced Key Code (SW3, SW6, SW10, SW16)"]
+    SingleShotLock -- No --> IgnoreHold["Lockout Repeat Key Pulse"]
+
+    RegisterKey --> LockState["Set Key Pressed Latch = True"]
+    ResetIntegrator --> UnlockState["Set Key Pressed Latch = False"]
 ```
-MCU_Contest_2026/
-├── .gitignore                   # Toolchain build artifact exclusion rules
-├── README.md                    # Firmware Architecture & Implementation Document
-├── main_clock_skeleton.c        # Main C Source Code
-├── Clock_Simulation.uvprojx     # Keil uVision Project File
-├── Clock_Simulation.uvoptx     # Keil uVision Option File
-├── debug.ini                    # Debug Configuration Script
-├── EventRecorderStub.scvd       # Event Recorder View Component
-├── Docs/                        # Documentation Thư Mục
-│   └── ĐỀ THI MCU 2026.pdf      # MCU Specification Reference
-└── RTE/                         # Run-Time Environment Drivers
+
+---
+
+### Principle 6: Watchdog Supervisor Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant MainLoop as "Super-Loop (main)"
+    participant FSM as "System State Machine"
+    participant WDT as "Hardware Watchdog (WDT)"
+
+    loop Every Main Iteration
+        MainLoop->>FSM: Execute Task Health Checks
+        alt All Subsystems Healthy
+            FSM-->>MainLoop: Health Check Passed
+            MainLoop->>WDT: Issue WDT_Feed()
+        else Subsystem Locked / Invalid State
+            FSM-->>MainLoop: Health Check Failed
+            Note over MainLoop,WDT: WDT Feed Withheld
+            WDT->>WDT: Timeout Period Expires (2.0s)
+            WDT->>MainLoop: Issue Hardware System Reset
+        end
+    end
 ```
 
 ---
@@ -151,16 +211,6 @@ MCU_Contest_2026/
 | **7-Segment Display** | Direct pin mutation; severe digit ghosting bleed. | 3-Phase timing sequence (Blanking $\rightarrow$ Data Load $\rightarrow$ Enable Digit). |
 | **Key Processing** | Delay loop polling (`delay_ms(20)`); causes display jitter. | Integrator filter with consecutive sample validation (5ms window). |
 | **Watchdog Supervision** | Fed inside timer ISR; fails to reset if main loop freezes. | Super-loop health check; fed exclusively in main loop cycle. |
-
----
-
-## Build and Deployment Protocol
-
-1. Open `Clock_Simulation.uvprojx` in **Keil MDK-ARM uVision v5.x**.
-2. Set target microcontroller to `SN32F407`.
-3. Execute **Rebuild All Target Files** (`F7`). Verify output reports `0 Error(s), 0 Warning(s)`.
-4. Connect **SN32F407_EVK** board via CMSIS-DAP debugger.
-5. Click **Download** (`F8`) to program non-volatile Flash memory.
 
 ---
 
