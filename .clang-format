@@ -1,0 +1,40 @@
+# ============================================================================
+# clang-format configuration - Porygon firmware coding standard
+#
+# Style: 4-space indent, Allman braces, 100-column limit, pointers left.
+# Enforced in CI (clang-format --dry-run --Werror on all firmware sources).
+# Target: clang-format 22.x (run `clang-format --version` to confirm).
+# ============================================================================
+BasedOnStyle: LLVM
+Language: Cpp
+
+IndentWidth: 4
+UseTab: Never
+TabWidth: 4
+ColumnLimit: 100
+
+# Braces on their own line (Allman) - matches the firmware's function style.
+BreakBeforeBraces: Allman
+
+# One-liners: keep empty bodies on one line, expand everything else.
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+# Spaces: control keywords get a space before '(', calls do not.
+SpaceBeforeParens: ControlStatements
+
+# Pointers/references bind to the type name.
+PointerAlignment: Left
+
+# Includes: keep grouping, sort within each block.
+SortIncludes: true
+IncludeBlocks: Preserve
+
+# Alignment: do not force column alignment of declarations.
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+
+# Comments
+CommentPragmas: "^ IWYU pragma:"

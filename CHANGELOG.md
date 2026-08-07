@@ -4,7 +4,33 @@ All notable changes to the Porygon FPGA & MCU framework are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses semantic-style versioning.
 
-## [1.1.0] - 2026-08-07
+## [1.1.0-rc2] - 2026-08-07
+
+### Added
+- **`.clang-format` coding standard** (root) - 4-space indent, Allman braces,
+  100-column limit, pointers-left. Applies to all firmware sources.
+- **CI `code-style` job** - runs the pinned `clang-format 22.1.8`
+  (`--dry-run --Werror`) over every firmware source, so the format standard
+  is enforced on every push, not just a convention.
+- **`-pedantic` on the production-path CI check** - C99-strict compilation
+  on top of `-Wall -Wextra -Werror`.
+- `SYSTICK_RELOAD_1MS` named constant in `main.c` (derivation documented:
+  12,000,000 / 1,000 - 1).
+
+### Changed
+- **Full formatting pass** over all MCU sources (12 files) with the new
+  `.clang-format` - whitespace/layout only, verified by re-running the
+  54-check simulation (54/54 pass) and the production `-Werror -pedantic`
+  build.
+- `Keypad_ReadRaw()`: replaced the nested ternary with explicit early
+  returns - clearer, and silences a cppcheck `knownConditionTrueFalse`
+  diagnostic.
+- `Display_Tick1ms()`: `out[]` declared `const` (cppcheck `constVariable`).
+
+### Fixed
+- None (no logic changes in this release; rc2 is rc1 + standards pass).
+
+## [1.1.0-rc1] - 2026-08-07
 
 ### Added (new logic)
 - **Modular firmware split** - the single `main_clock_skeleton.c` (289 lines)

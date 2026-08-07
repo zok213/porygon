@@ -24,7 +24,7 @@ uint8_t EEPROM_ReadByte(uint8_t addr);
  * memory is blank or corrupted it initialises defaults (00:00, disarmed) and
  * rewrites the record, so the system can never boot into out-of-range values.
  * Returns 1 when valid data was restored, 0 when defaults were used. */
-uint8_t EEPROM_LoadAlarm(uint8_t *hour, uint8_t *min, uint8_t *armed);
-void    EEPROM_SaveAlarm(uint8_t hour, uint8_t min, uint8_t armed);
+uint8_t EEPROM_LoadAlarm(uint8_t* hour, uint8_t* min, uint8_t* armed);
+void EEPROM_SaveAlarm(uint8_t hour, uint8_t min, uint8_t armed);
 
 #endif /* EEPROM_H */

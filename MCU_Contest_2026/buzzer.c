@@ -20,19 +20,19 @@
 #include "buzzer.h"
 #include "system.h"
 
-#define BEEP_KEY_MS       300UL
-#define ALARM_RING_MS     5000UL
-#define ALARM_TOGGLE_MS   1000UL
+#define BEEP_KEY_MS 300UL
+#define ALARM_RING_MS 5000UL
+#define ALARM_TOGGLE_MS 1000UL
 
-#define BUZZ_HALF_PERIOD_NOP  250   /* ~4-5kHz square wave @ 12MHz          */
-#define BUZZ_BURST_CYCLES     2     /* full cycles per 1ms tick (bounded)   */
+#define BUZZ_HALF_PERIOD_NOP 250 /* ~4-5kHz square wave @ 12MHz          */
+#define BUZZ_BURST_CYCLES 2      /* full cycles per 1ms tick (bounded)   */
 
-#define BUZZER_PIN   1               /* GPIO3 bit 0                          */
+#define BUZZER_PIN 1 /* GPIO3 bit 0                          */
 
-static volatile uint16_t buzzer_beep_ms   = 0;
-static volatile uint8_t  alarm_ringing    = 0;
-static volatile uint32_t alarm_ring_ms    = 0;
-static volatile uint8_t  buzzer_active    = 0;
+static volatile uint16_t buzzer_beep_ms = 0;
+static volatile uint8_t alarm_ringing = 0;
+static volatile uint32_t alarm_ring_ms = 0;
+static volatile uint8_t buzzer_active = 0;
 
 /* ------------------------------------------------------------------------- */
 void Buzzer_BeepKey(void)
@@ -42,7 +42,8 @@ void Buzzer_BeepKey(void)
 
 void Buzzer_StartAlarm(void)
 {
-    if (!alarm_ringing) {
+    if (!alarm_ringing)
+    {
         alarm_ringing = 1;
         alarm_ring_ms = 0;
     }
@@ -80,26 +81,39 @@ void Buzzer_HW_ToneOff(void)
 void Buzzer_Tick1ms(void)
 {
     /* --- Pattern selection: key beep has priority over alarm ring ------- */
-    if (buzzer_beep_ms) {
+    if (buzzer_beep_ms)
+    {
         buzzer_beep_ms--;
         buzzer_active = 1;
-    } else if (alarm_ringing) {
+    }
+    else if (alarm_ringing)
+    {
         buzzer_active = (++alarm_ring_ms < ALARM_RING_MS)
-                      ? ((alarm_ring_ms % ALARM_TOGGLE_MS) < (ALARM_TOGGLE_MS / 2))
-                      : (alarm_ringing = 0);
-    } else {
+                            ? ((alarm_ring_ms % ALARM_TOGGLE_MS) < (ALARM_TOGGLE_MS / 2))
+                            : (alarm_ringing = 0);
+    }
+    else
+    {
         buzzer_active = 0;
     }
 
     /* --- Tone generation (short burst, bounded ISR time) ---------------- */
-    if (buzzer_active) {
-        for (int i = 0; i < BUZZ_BURST_CYCLES; i++) {
+    if (buzzer_active)
+    {
+        for (int i = 0; i < BUZZ_BURST_CYCLES; i++)
+        {
             Buzzer_HW_ToneOn();
-            for (volatile int d = 0; d < BUZZ_HALF_PERIOD_NOP; d++) {}
+            for (volatile int d = 0; d < BUZZ_HALF_PERIOD_NOP; d++)
+            {
+            }
             Buzzer_HW_ToneOff();
-            for (volatile int d = 0; d < BUZZ_HALF_PERIOD_NOP; d++) {}
+            for (volatile int d = 0; d < BUZZ_HALF_PERIOD_NOP; d++)
+            {
+            }
         }
-    } else {
+    }
+    else
+    {
         Buzzer_HW_ToneOff();
     }
 }

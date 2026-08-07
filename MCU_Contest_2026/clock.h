@@ -4,8 +4,8 @@
 #ifndef CLOCK_H
 #define CLOCK_H
 
-#include <stdint.h>
 #include "system.h"
+#include <stdint.h>
 
 /* Restore alarm settings from EEPROM (magic + checksum validated inside). */
 void Clock_LoadAlarmFromEEPROM(void);

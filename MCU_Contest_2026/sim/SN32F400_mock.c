@@ -9,5 +9,5 @@ SN_GPIO_Type sn_gpio2_obj;
 SN_GPIO_Type sn_gpio3_obj;
 SN_SYS1_Type sn_sys1_obj;
 SN_PFPA_Type sn_pfpa_obj;
-SN_I2C_Type  sn_i2c0_obj;
+SN_I2C_Type sn_i2c0_obj;
 SysTick_Type sn_systick_obj;

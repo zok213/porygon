@@ -18,8 +18,8 @@
 #include "keypad.h"
 #include "system.h"
 
-#define KEY_DEBOUNCE_MS  20UL   /* stable press window before emission  */
-#define KEY_RELEASE_MS   20UL   /* stable release window before re-arm  */
+#define KEY_DEBOUNCE_MS 20UL /* stable press window before emission  */
+#define KEY_RELEASE_MS 20UL  /* stable release window before re-arm  */
 
 /* ------------------------------------------------------------------------- */
 /* Hardware abstraction: real-board implementation.                          */
@@ -29,13 +29,13 @@
 
 void Keypad_HW_DriveRow(uint8_t row)
 {
-    SN_GPIO1->BSET = (0x0F << 4);        /* all rows high                 */
-    SN_GPIO1->BCLR = (1 << (4 + row));   /* drive active row low          */
+    SN_GPIO1->BSET = (0x0F << 4);      /* all rows high                 */
+    SN_GPIO1->BCLR = (1 << (4 + row)); /* drive active row low          */
 }
 
 uint8_t Keypad_HW_ReadColumnBits(void)
 {
-    return (uint8_t)((SN_GPIO2->DATA >> 4) & 0x0F);   /* cols 4..7, low=on */
+    return (uint8_t)((SN_GPIO2->DATA >> 4) & 0x0F); /* cols 4..7, low=on */
 }
 
 #endif /* !MOCK_SIMULATION */
@@ -44,15 +44,20 @@ uint8_t Keypad_HW_ReadColumnBits(void)
 /* Raw matrix read: returns the first pressed key code or 0.                */
 static uint8_t Keypad_ReadRaw(void)
 {
-    for (int r = 0; r < 4; r++) {
+    for (int r = 0; r < 4; r++)
+    {
         Keypad_HW_DriveRow((uint8_t)r);
         uint8_t cols = Keypad_HW_ReadColumnBits();
-        for (int c = 0; c < 4; c++) {
-            if (!(cols & (1u << c))) {
-                /* Board key numbering: row 3 holds SW16 (16) and SW15. */
-                return (r == 3 && c == 0) ? 16
-                     : (r == 3 && c == 1) ? 15
-                     : (uint8_t)(r * 4 + c + 3);
+        for (int c = 0; c < 4; c++)
+        {
+            if (!(cols & (1u << c)))
+            {
+                /* Row 3 carries SW16 (column 0) and SW15 (column 1). */
+                if (r == 3 && c == 0)
+                    return 16;
+                if (r == 3 && c == 1)
+                    return 15;
+                return (uint8_t)(r * 4 + c + 3);
             }
         }
     }
@@ -62,39 +67,47 @@ static uint8_t Keypad_ReadRaw(void)
 /* ------------------------------------------------------------------------- */
 uint8_t Keypad_Scan(void)
 {
-    static uint8_t  raw_prev    = 0;   /* last raw sample                 */
-    static uint8_t  emit_latch  = 0;   /* event emitted, waiting release  */
-    static uint8_t  release_run = 0;   /* stable-release window active    */
-    static uint32_t change_ms   = 0;   /* ms of last raw change           */
-    static uint32_t release_ms  = 0;   /* ms of release window start      */
+    static uint8_t raw_prev = 0;    /* last raw sample                 */
+    static uint8_t emit_latch = 0;  /* event emitted, waiting release  */
+    static uint8_t release_run = 0; /* stable-release window active    */
+    static uint32_t change_ms = 0;  /* ms of last raw change           */
+    static uint32_t release_ms = 0; /* ms of release window start      */
 
-    uint8_t  raw = Keypad_ReadRaw();
+    uint8_t raw = Keypad_ReadRaw();
     uint32_t now = system_ms_counter;
 
     /* --- Waiting for a confirmed release after an emitted event --------- */
-    if (emit_latch) {
-        if (raw) {
-            release_run = 0;                /* bounced back down: restart */
-        } else if (!release_run) {
-            release_run = 1;                /* release candidate          */
-            release_ms  = now;
-        } else if ((uint32_t)(now - release_ms) >= KEY_RELEASE_MS) {
-            emit_latch  = 0;                /* fully released, re-arm     */
+    if (emit_latch)
+    {
+        if (raw)
+        {
+            release_run = 0; /* bounced back down: restart */
+        }
+        else if (!release_run)
+        {
+            release_run = 1; /* release candidate          */
+            release_ms = now;
+        }
+        else if ((uint32_t)(now - release_ms) >= KEY_RELEASE_MS)
+        {
+            emit_latch = 0; /* fully released, re-arm     */
             release_run = 0;
-            raw_prev    = 0;
+            raw_prev = 0;
         }
         return 0;
     }
 
     /* --- Input changed: restart the debounce window --------------------- */
-    if (raw != raw_prev) {
-        raw_prev  = raw;
+    if (raw != raw_prev)
+    {
+        raw_prev = raw;
         change_ms = now;
         return 0;
     }
 
     /* --- Stable for the debounce window: emit one edge ------------------ */
-    if (raw && (uint32_t)(now - change_ms) >= KEY_DEBOUNCE_MS) {
+    if (raw && (uint32_t)(now - change_ms) >= KEY_DEBOUNCE_MS)
+    {
         emit_latch = 1;
         return raw;
     }

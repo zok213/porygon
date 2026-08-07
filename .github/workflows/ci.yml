@@ -60,13 +60,38 @@ jobs:
       - name: Install Host Toolchain
         run: sudo apt-get update && sudo apt-get install -y gcc
 
-      - name: Syntax-check all modules (non-MOCK path, -Werror)
+      - name: Syntax-check all modules (non-MOCK path, -Werror -pedantic)
         run: |
           for f in main.c clock.c keypad.c display.c buzzer.c eeprom.c; do
-            gcc -std=c99 -Wall -Wextra -Werror -fsyntax-only \
+            gcc -std=c99 -Wall -Wextra -Werror -pedantic -fsyntax-only \
                 -I MCU_Contest_2026 -I MCU_Contest_2026/sim \
                 "MCU_Contest_2026/$f" || exit 1
           done
+
+  code-style:
+    name: Code Style (clang-format)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install pinned clang-format (identical to local tooling)
+        run: |
+          pip install --quiet clang-format==22.1.8
+
+      - name: Verify firmware sources are clang-formatted
+        run: |
+          clang-format --dry-run --Werror \
+            MCU_Contest_2026/main.c MCU_Contest_2026/clock.c \
+            MCU_Contest_2026/clock.h MCU_Contest_2026/keypad.c \
+            MCU_Contest_2026/keypad.h MCU_Contest_2026/display.c \
+            MCU_Contest_2026/display.h MCU_Contest_2026/buzzer.c \
+            MCU_Contest_2026/buzzer.h MCU_Contest_2026/eeprom.c \
+            MCU_Contest_2026/eeprom.h MCU_Contest_2026/system.h \
+            MCU_Contest_2026/app.h \
+            MCU_Contest_2026/sim/sim_main.c \
+            MCU_Contest_2026/sim/SN32F400.h \
+            MCU_Contest_2026/sim/SN32F400_mock.c
 
   fpga-rtl-verification:
     name: FPGA RTL Verification (iverilog)

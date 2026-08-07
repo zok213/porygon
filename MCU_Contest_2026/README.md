@@ -142,6 +142,24 @@ make clean
 
 The same build is executed by the repository CI pipeline.
 
+## Coding Standards
+
+The repository enforces a single, machine-checked coding standard:
+
+- **Formatter**: `clang-format` with the repo's `.clang-format` (4-space
+  indent, Allman braces, 100-column limit, pointers-left). Run
+  `clang-format -i <file>` before committing; CI fails on any deviation
+  (`code-style` job, pinned clang-format 22.1.8).
+- **Compiler discipline**: all modules build with
+  `-Wall -Wextra -Werror -pedantic` (C99) in CI - zero warnings allowed.
+- **Static analysis**: cppcheck (`--enable=all --inconclusive`) runs on every
+  push; the production path (non-MOCK) is currently clean.
+- **Behavioural gate**: every logic change must keep the host simulation at
+  54/54 checks (`make run`).
+- **Conventions**: `UPPER_SNAKE` for macros/constants, `CamelCase` for
+  functions, `snake_case` for variables, `volatile` on every ISR-shared
+  variable, header include guards on every header.
+
 ## Building for Hardware (Keil MDK)
 
 1. Open `Clock_Simulation.uvprojx` in Keil MDK v5.43+ (SONiX SN32F4_DFP 1.1.1

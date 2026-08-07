@@ -17,26 +17,27 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
-#include <stdint.h>
 #include "SN32F400.h"
+#include <stdint.h>
 
 /* ------------------------------- FSM states ------------------------------ */
-typedef enum {
-    MODE_NORMAL       = 0,   /* clock running, no edit */
-    MODE_EDIT_HOUR    = 1,   /* time hour edit (HH blinks)   */
-    MODE_EDIT_MIN     = 2,   /* time minute edit (MM blinks) */
-    MODE_EDIT_AL_HOUR = 3,   /* alarm hour edit (HH blinks)  */
-    MODE_EDIT_AL_MIN  = 4    /* alarm minute edit (MM blinks)*/
+typedef enum
+{
+    MODE_NORMAL = 0,       /* clock running, no edit */
+    MODE_EDIT_HOUR = 1,    /* time hour edit (HH blinks)   */
+    MODE_EDIT_MIN = 2,     /* time minute edit (MM blinks) */
+    MODE_EDIT_AL_HOUR = 3, /* alarm hour edit (HH blinks)  */
+    MODE_EDIT_AL_MIN = 4   /* alarm minute edit (MM blinks)*/
 } SystemMode_t;
 
 /* ------------------------------ Key codes -------------------------------- */
-#define KEY_SETUP   3    /* SW3  : time edit state machine        */
-#define KEY_PLUS    6    /* SW6  : increment hour / minute        */
-#define KEY_MINUS   10   /* SW10 : decrement hour / minute        */
-#define KEY_ALARM   16   /* SW16 : alarm edit state machine       */
+#define KEY_SETUP 3  /* SW3  : time edit state machine        */
+#define KEY_PLUS 6   /* SW6  : increment hour / minute        */
+#define KEY_MINUS 10 /* SW10 : decrement hour / minute        */
+#define KEY_ALARM 16 /* SW16 : alarm edit state machine       */
 
 /* --------------------------- Timing constants ---------------------------- */
-#define TIMEOUT_MS      30000UL  /* edit-mode inactivity rollback   */
+#define TIMEOUT_MS 30000UL /* edit-mode inactivity rollback   */
 
 /* ------------------------ Shared volatile state bus ---------------------- */
 extern volatile SystemMode_t system_mode;
@@ -54,7 +55,7 @@ extern volatile uint8_t edit_time_min;
 extern volatile uint8_t edit_alarm_hour;
 extern volatile uint8_t edit_alarm_min;
 
-extern volatile uint32_t system_ms_counter;   /* monotonic ms tick      */
-extern volatile uint32_t inactivity_ms;       /* ms since last key      */
+extern volatile uint32_t system_ms_counter; /* monotonic ms tick      */
+extern volatile uint32_t inactivity_ms;     /* ms since last key      */
 
 #endif /* SYSTEM_H */
