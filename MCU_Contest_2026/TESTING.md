@@ -4,6 +4,22 @@ This guide takes the firmware from source to a fully tested board, verifies
 **every requirement of the đề bài**, and doubles as the demo-video script
 (20% of the score).
 
+## 0. Which version to flash (branch discipline)
+
+The new firmware is under **hardware test** — it lives on the **`MCU_dev`**
+branch (tag `v1.1.0-rc1`), NOT on production branches. `MCU_main` / `release`
+still carry the previous known-good firmware until testing passes.
+
+```bash
+git fetch origin
+git checkout -b testing origin/MCU_dev   # or: git checkout MCU_dev
+git describe --tags                       # expect: v1.1.0-rc1
+# then open MCU_Contest_2026/Clock_Simulation.uvprojx and build
+```
+
+When all tests in §4–§6 pass, the merge path is:
+`MCU_dev → MCU_main → release → main` (per the repository branch policy).
+
 ---
 
 ## 1. Prerequisites
