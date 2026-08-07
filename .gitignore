@@ -28,6 +28,11 @@ __history/
 *.sct
 *._2kp
 
+# Keil Compiler Output Files
+*.err
+*.esym
+*.xsym
+
 # Keil User Specific Configuration Files
 *.uvguix.*
 *.uvgui.*

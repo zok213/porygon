@@ -22,6 +22,11 @@ __history/
 *.sct
 *._2kp
 
+# Keil Compiler Output Files
+*.err
+*.esym
+*.xsym
+
 # Keil User Specific Configuration Files (Do not commit user GUI state)
 *.uvguix.*
 *.uvgui.*

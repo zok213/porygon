@@ -1,21 +1,21 @@
-name: Firmware Verification Pipeline
+name: Firmware & RTL Verification Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
 
 jobs:
   simulation:
-    name: Host Simulation (54 firmware checks)
+    name: MCU Host Simulation (54 firmware checks)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Install Host Toolchain
-        run: sudo apt-get update && sudo apt-get install -y gcc cppcheck
+        run: sudo apt-get update && sudo apt-get install -y gcc
 
       - name: Build Simulation Harness
         run: |
@@ -32,7 +32,7 @@ jobs:
         run: ./clock_sim
 
   static-analysis:
-    name: Static Analysis (cppcheck)
+    name: MCU Static Analysis (cppcheck)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -51,7 +51,7 @@ jobs:
                    MCU_Contest_2026/buzzer.c MCU_Contest_2026/eeprom.c
 
   production-path:
-    name: Production Path Syntax Check
+    name: MCU Production Path Syntax Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -68,6 +68,34 @@ jobs:
                 "MCU_Contest_2026/$f" || exit 1
           done
 
+  fpga-rtl-verification:
+    name: FPGA RTL Verification (iverilog)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install iverilog
+        run: sudo apt-get update && sudo apt-get install -y iverilog
+
+      - name: Verify FPGA Source Files Exist
+        run: |
+          test -f FPGA/top.v
+          test -f FPGA/pll_50mhz.v
+          test -f FPGA/debouncer.v
+          test -f FPGA/breathing_pwm.v
+          test -f FPGA/uart_tx.v
+          echo "FPGA sources present."
+
+      - name: Run Verilog Syntax Check on all modules
+        run: |
+          find FPGA -name '*.v' -exec iverilog -t null {} +
+
+      - name: Verify FPGA Documentation
+        run: |
+          test -f FPGA/README.md
+          echo "FPGA documentation verified."
+
   documentation:
     name: Documentation & Repository Integrity
     runs-on: ubuntu-latest
@@ -79,8 +107,11 @@ jobs:
         run: |
           test -f README.md
           test -f CHANGELOG.md
+          test -f SETUP.md
           test -f .gitignore
           test -f MCU_Contest_2026/README.md
+          test -f MCU_Contest_2026/TESTING.md
+          test -f MCU_Contest_2026/CHANGES_VS_ORIGINAL.md
           test -f MCU_Contest_2026/Clock_Simulation.uvprojx
           test -f MCU_Contest_2026/sim/sim_main.c
           test -f MCU_Contest_2026/sim/SN32F400.h
@@ -91,4 +122,5 @@ jobs:
         run: |
           test -f "ĐỀ THI MCU 2026.pdf"
           test -f "ĐỀ THI FGPA 2026.docx.pdf"
+          test -f "Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v (1).pdf"
           echo "Specification documents verified."
