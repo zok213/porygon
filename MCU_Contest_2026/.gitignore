@@ -29,6 +29,20 @@ __history/
 *.uvprojx.bak
 *.bak
 *.dep
+*.uvoptx
+
+# Build / toolchain leftovers
+*.err
+*.esym
+*.xsym
+*.scvd
+
+# Host simulation build outputs
+clock_sim
+clock_sim.exe
+*.pdb
+sim/*.o
+sim/*.exe
 
 # Editor & OS Temporary Files
 .vscode/

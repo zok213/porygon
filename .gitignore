@@ -43,3 +43,7 @@ __history/
 Thumbs.db
 *.tmp
 *.log
+
+# Tool session artifacts
+.omo/
+

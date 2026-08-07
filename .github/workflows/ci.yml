@@ -1,4 +1,4 @@
-name: Firmware & RTL Verification Pipeline
+name: Firmware Verification Pipeline
 
 on:
   push:
@@ -7,38 +7,70 @@ on:
     branches: [ main, master ]
 
 jobs:
-  firmware-static-analysis:
-    name: MCU Firmware Static Analysis
+  simulation:
+    name: Host Simulation (54 firmware checks)
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install C/C++ Static Analyzer & ARM Toolchain
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cppcheck gcc-arm-none-eabi
+      - name: Install Host Toolchain
+        run: sudo apt-get update && sudo apt-get install -y gcc cppcheck
 
-      - name: Verify MCU Project Structure
+      - name: Build Simulation Harness
         run: |
-          test -f MCU_Contest_2026/main_clock_skeleton.c
-          test -f MCU_Contest_2026/Clock_Simulation.uvprojx
-          test -f README.md
-          echo "MCU Project structure verified successfully."
+          gcc -std=c99 -Wall -Wextra -Werror -DMOCK_SIMULATION \
+              -I MCU_Contest_2026 -I MCU_Contest_2026/sim \
+              MCU_Contest_2026/main.c MCU_Contest_2026/clock.c \
+              MCU_Contest_2026/keypad.c MCU_Contest_2026/display.c \
+              MCU_Contest_2026/buzzer.c MCU_Contest_2026/eeprom.c \
+              MCU_Contest_2026/sim/SN32F400_mock.c \
+              MCU_Contest_2026/sim/sim_main.c \
+              -o clock_sim
 
-      - name: Run Cppcheck Static Analysis on Firmware Source
-        run: |
-          cppcheck --enable=all --suppress=missingIncludeSystem --error-exitcode=1 MCU_Contest_2026/main_clock_skeleton.c || echo "Cppcheck complete with warnings."
+      - name: Run Firmware Checks
+        run: ./clock_sim
 
-      - name: Verify ARM Syntax Compilation (ARM Cortex-M0)
-        run: |
-          arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -fsyntax-only -I MCU_Contest_2026/ MCU_Contest_2026/main_clock_skeleton.c || echo "Syntax check finished."
-
-  documentation-verification:
-    name: Documentation & Repository Integrity Check
+  static-analysis:
+    name: Static Analysis (cppcheck)
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
+      - name: Install cppcheck
+        run: sudo apt-get update && sudo apt-get install -y cppcheck
+
+      - name: Run cppcheck on Firmware (host-build view)
+        run: |
+          cppcheck --enable=warning,style,performance,portability \
+                   --error-exitcode=1 --suppress=missingIncludeSystem \
+                   -DMOCK_SIMULATION -I MCU_Contest_2026 -I MCU_Contest_2026/sim \
+                   MCU_Contest_2026/main.c MCU_Contest_2026/clock.c \
+                   MCU_Contest_2026/keypad.c MCU_Contest_2026/display.c \
+                   MCU_Contest_2026/buzzer.c MCU_Contest_2026/eeprom.c
+
+  production-path:
+    name: Production Path Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Host Toolchain
+        run: sudo apt-get update && sudo apt-get install -y gcc
+
+      - name: Syntax-check all modules (non-MOCK path, -Werror)
+        run: |
+          for f in main.c clock.c keypad.c display.c buzzer.c eeprom.c; do
+            gcc -std=c99 -Wall -Wextra -Werror -fsyntax-only \
+                -I MCU_Contest_2026 -I MCU_Contest_2026/sim \
+                "MCU_Contest_2026/$f" || exit 1
+          done
+
+  documentation:
+    name: Documentation & Repository Integrity
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -46,12 +78,17 @@ jobs:
       - name: Check Mandatory Files
         run: |
           test -f README.md
+          test -f CHANGELOG.md
           test -f .gitignore
           test -f MCU_Contest_2026/README.md
-          echo "Documentation files present."
+          test -f MCU_Contest_2026/Clock_Simulation.uvprojx
+          test -f MCU_Contest_2026/sim/sim_main.c
+          test -f MCU_Contest_2026/sim/SN32F400.h
+          test -f MCU_Contest_2026/sim/Makefile
+          echo "Documentation and structure verified."
 
-      - name: Verify PDF Specifications Architecture Archive
+      - name: Verify Contest Specifications Present
         run: |
           test -f "ĐỀ THI MCU 2026.pdf"
           test -f "ĐỀ THI FGPA 2026.docx.pdf"
-          echo "PDF Specification documents verified."
+          echo "Specification documents verified."
