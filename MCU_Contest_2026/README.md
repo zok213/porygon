@@ -84,6 +84,18 @@ then latches until the release has also been stable for 20ms. A bouncy press
 or a long hold can never produce more than one event. Debounce timing uses the
 system 1ms counter, so the main-loop call rate does not affect behaviour.
 
+```mermaid
+stateDiagram-v2
+    [*] --> IDLE : no key
+    IDLE --> DEBOUNCING : raw change (restart 20ms window)
+    DEBOUNCING --> DEBOUNCING : input still changing (window restarts)
+    DEBOUNCING --> EMITTED : 20ms stable contact
+    EMITTED --> EMITTED : key held (latch)
+    EMITTED --> RELEASING : raw released (20ms window)
+    RELEASING --> EMITTED : bounce back down (restart)
+    RELEASING --> IDLE : 20ms stable release (re-arm)
+```
+
 ### 2. Isolated shadow edit buffers, clock frozen during time edit
 Editing operates on `edit_*` shadow buffers. The master clock keeps running
 during alarm edits but is intentionally paused during time edits

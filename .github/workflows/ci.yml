@@ -134,13 +134,18 @@ jobs:
           test -f CHANGELOG.md
           test -f SETUP.md
           test -f .gitignore
+          test -f .github/README.md
           test -f MCU_Contest_2026/README.md
           test -f MCU_Contest_2026/TESTING.md
           test -f MCU_Contest_2026/CHANGES_VS_ORIGINAL.md
+          test -f MCU_Contest_2026/sim/README.md
+          test -f MCU_Contest_2026/Docs/README.md
+          test -f MCU_Contest_2026/RTE/README.md
           test -f MCU_Contest_2026/Clock_Simulation.uvprojx
           test -f MCU_Contest_2026/sim/sim_main.c
           test -f MCU_Contest_2026/sim/SN32F400.h
           test -f MCU_Contest_2026/sim/Makefile
+          test -f FPGA/README.md
           echo "Documentation and structure verified."
 
       - name: Verify Contest Specifications Present
