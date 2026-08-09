@@ -40,6 +40,7 @@ Hệ thống ứng dụng nguyên lý **Lập trình Nhúng Phòng thủ (Defens
 5. **Tự Phục Hồi Lỗi HardFault (`HardFault_Handler`)**: Viết đè hàm C `HardFault_Handler` chứa `__disable_irq()` và `NVIC_SystemReset()`, cho phép vi điều khiển tự động Soft Reset khi gặp nhiễu.
 6. **Thuật toán ACK Polling EEPROM**: Thay thế vòng lặp NOP thô bằng thuật toán **ACK Polling** (`do { ok = I2C0_Write(1, 1); if (ok) break; } while (++poll_retry < 50);`), tự động tương thích với thời gian ghi $t_{WR}$ của EEPROM.
 7. **Xóa Cờ Lỗi Dính Cứng (Sticky Error)**: Thêm `Error = 0;` ở đầu hai hàm `I2C0_Read()` và `I2C0_Write()` để xóa trạng thái dính lỗi sau khi bị NACK ngẫu nhiên.
+8. **Nhấn Giữ Tự Động Cuộn Số Nhanh (Key Auto-Repeat)**: Thuật toán lặp 2 pha (Delay $500\text{ms} \rightarrow$ Repeat $100\text{ms}$) cho hai phím SW6 (`KEY_PLUS`) và SW10 (`KEY_MINUS`), tự động nâng/hạ số mượt mà khi nhấn giữ.
 
 ---
 

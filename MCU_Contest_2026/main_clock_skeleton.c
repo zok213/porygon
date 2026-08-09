@@ -108,8 +108,15 @@ void HW_Init(void) {
     SysTick->LOAD = 11999; SysTick->VAL = 0; SysTick->CTRL = 7;
 }
 
+#define HOLD_INITIAL_DELAY_MS   500UL   // Tre 500ms ban dau truoc khi bat dau cuon so nhanh
+#define HOLD_REPEAT_RATE_MS     100UL   // Toc do cuon 100ms/nac khi nhan giu phim SW6/SW10
+
 uint8_t Scan_Key(void) {
-    static uint8_t last = 0; uint8_t curr = 0;
+    static uint8_t  last = 0;
+    static uint32_t hold_time_ms = 0;
+    static uint32_t last_scan_time = 0;
+    uint8_t curr = 0;
+
     for (int r = 0; r < 4; r++) {
         SN_GPIO1->BSET = (0x0F << 4);
         SN_GPIO1->BCLR = (1 << (4 + r));
@@ -120,9 +127,31 @@ uint8_t Scan_Key(void) {
             }
         }
     }
+
 key_detect:
-    if (curr && curr != last) { last = curr; return curr; }
-    if (!curr) last = 0;
+    uint32_t now = system_ms_counter;
+    uint32_t delta = now - last_scan_time;
+    last_scan_time = now;
+
+    if (curr) {
+        if (curr != last) {
+            last = curr;
+            hold_time_ms = 0;
+            return curr;
+        } else {
+            hold_time_ms += delta;
+            if (curr == KEY_PLUS || curr == KEY_MINUS) {
+                if (hold_time_ms >= HOLD_INITIAL_DELAY_MS) {
+                    hold_time_ms -= HOLD_REPEAT_RATE_MS;
+                    return curr;
+                }
+            }
+        }
+    } else {
+        last = 0;
+        hold_time_ms = 0;
+    }
+
     return 0;
 }
 

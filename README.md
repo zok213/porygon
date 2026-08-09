@@ -12,7 +12,7 @@
 
 Tài liệu này trình bày giải pháp kiến trúc phần mềm nhúng thương mại cho **Hệ thống Đồng hồ Số Thông minh & Báo thức Lưu trữ EEPROM** chạy trên bo mạch kiểm thử **SN32F407_EVK** (vi điều khiển lõi ARM Cortex-M0).
 
-Mã nguồn được thiết kế tuân thủ nghiêm ngặt các nguyên lý **Lập trình Nhúng Phòng thủ (Defensive Embedded Programming)**, giải quyết triệt để các hạn chế về thời gian thực, triệt tiêu hiện tượng lem màu bóng ma LED 7 đoạn, phòng ngừa nguy cơ treo bus giao tiếp I2C, chống nẩy phím bấm ma trận chính xác, và tích hợp cơ chế tự phục hồi hệ thống khi gặp sự cố điện từ (ESD/EMC).
+Mã nguồn được thiết kế tuân thủ nghiêm ngặt các nguyên lý **Lập trình Nhúng Phòng thủ (Defensive Embedded Programming)**, giải quyết triệt để các hạn chế về thời gian thực, triệt tiêu hiện tượng lem màu bóng ma LED 7 đoạn, phòng ngừa nguy cơ treo bus giao tiếp I2C, chống nẩy phím bấm ma trận chính xác, hỗ trợ tính năng **nhấn giữ tự động cuộn số nhanh (Key Auto-Repeat)**, và tích hợp cơ chế tự phục hồi hệ thống khi gặp sự cố điện từ (ESD/EMC).
 
 ---
 
@@ -276,6 +276,10 @@ sequenceDiagram
    - *Vấn đề*: Trong ngắt `I2C0.c`, tín hiệu NACK thiết lập `Error = 1`. Do các hàm giao tiếp thiếu cơ chế tái lập cờ lỗi, một sự cố truyền nhận tạm thời sẽ khóa toàn bộ các lệnh đọc/ghi tiếp theo.
    - *Giải pháp*: Bổ sung lệnh reset cờ `Error = 0;` tại điểm khởi đầu của cả hai hàm `I2C0_Read()` và `I2C0_Write()`.
 
+8. **Tính Năng Nhấn Giữ Tự Động Cuộn Số Nhanh (Key Auto-Repeat / Fast Scroll)**:
+   - *Vấn đề*: Người dùng muốn chỉnh 59 phút phải thực hiện nhấn phím thủ công 59 lần liên tục gây mỏi tay.
+   - *Giải pháp*: Tích hợp giải thuật máy trạng thái lặp phím 2 pha (**Hold Delay $500\text{ms} \rightarrow$ Repeat Rate $100\text{ms}$**) dành riêng cho hai phím SW6 (`KEY_PLUS`) và SW10 (`KEY_MINUS`), tự động cuộn nâng/hạ số mượt mà với tốc độ 10 số / giây khi nhấn giữ.
+
 ---
 
 ## 13. Chứng Minh Toán Học & Tính Toán Xung Nhịp
@@ -312,7 +316,7 @@ Giá trị chính xác `SysTick->LOAD = 11999` được thiết lập trong hàm
 | **Đếm Thời Gian** | Dừng đếm giây khi người dùng vào menu chỉnh giờ. | Bộ đếm SysTick RTC chạy ngầm liên tục; dùng biến bóng shadow edit. |
 | **Kích Báo Thức** | So sánh liên tục; phát chuông hàng ngàn lần mỗi phút. | Chốt kích đơn theo cạnh thời gian (`time_sec == 0`). |
 | **Quét LED 7 Đoạn** | Thay đổi trực tiếp chân; gây hiện tượng lem màu / bóng ma. | Quy trình 3 pha (Xóa màn hình $\rightarrow$ Nạp mã thanh $\rightarrow$ Bật vị trí số). |
-| **Xử lý Nút Bấm** | Dùng lệnh `delay_ms(20)`; gây khóa CPU và giật màn hình. | Quét ma trận không nghẽn bus + chốt bắt cạnh đơn phím nhấn. |
+| **Xử lý Nút Bấm** | Dùng lệnh `delay_ms(20)`; gây khóa CPU và giật màn hình. | Quét ma trận không nghẽn bus + chốt bắt cạnh đơn phím nhấn + nhấn giữ tự động cuộn số. |
 | **Xử lý Xung Đột** | Hàm `HardFault_Handler B .` mặc định gây treo bo cứng. | Hàm xử lý defensive gọi `NVIC_SystemReset()` tự khởi động lại. |
 
 ---
@@ -344,7 +348,7 @@ Giá trị chính xác `SysTick->LOAD = 11999` được thiết lập trong hàm
 
 This document presents the commercial-grade embedded software solution for the **Smart Digital Clock & EEPROM Persistent Alarm System** running on the **SN32F407_EVK** evaluation board (ARM Cortex-M0 core).
 
-The firmware is designed strictly according to **Defensive Embedded Programming** principles, completely eliminating real-time bottlenecks, zero 7-segment display ghosting/flicker, zero I2C bus lockup risks, deterministic matrix keypad debouncing, and fault-tolerant self-healing recovery against electro-magnetic interference (ESD/EMC).
+The firmware is designed strictly according to **Defensive Embedded Programming** principles, completely eliminating real-time bottlenecks, zero 7-segment display ghosting/flicker, zero I2C bus lockup risks, deterministic matrix keypad debouncing, key press-and-hold auto-repeat fast scroll, and fault-tolerant self-healing recovery against electro-magnetic interference (ESD/EMC).
 
 ---
 
@@ -608,6 +612,10 @@ sequenceDiagram
    - *Issue*: Interrupt set `Error = 1` on NACK, but driver functions never cleared it, permanently blocking subsequent transactions.
    - *Fix*: Added `Error = 0;` at the beginning of `I2C0_Read()` and `I2C0_Write()`.
 
+8. **Key Auto-Repeat (Press & Hold Fast Scroll)**:
+   - *Issue*: Adjusting 59 minutes required pressing a button manually 59 times continuously, causing user fatigue.
+   - *Fix*: Implemented a 2-phase key repeat state machine (**Hold Delay $500\text{ms} \rightarrow$ Repeat Rate $100\text{ms}$**) for SW6 (`KEY_PLUS`) and SW10 (`KEY_MINUS`), enabling smooth auto-scroll at 10 increments/second during button hold.
+
 ---
 
 ## 13. Mathematical Calculations and Hardware Timing Proofs
@@ -644,7 +652,7 @@ This exact value `SysTick->LOAD = 11999` is configured in `HW_Init()`.
 | **Clock Timekeeping** | Seconds counter halted during user edit state, causing time drift. | Uninterrupted SysTick RTC background ticker; UI shadow edit variables. |
 | **Alarm Trigger** | Polling equality check; triggers thousands of times per minute. | Single-shot time edge trigger (`time_sec == 0`). |
 | **7-Segment Display** | Direct pin mutation; causes visual digit ghosting bleed. | 3-Phase timing sequence (Blanking $\rightarrow$ Data Load $\rightarrow$ Enable Digit). |
-| **Key Processing** | Software delay `delay_ms(20)`; blocks CPU and freezes display refresh. | Non-blocking matrix scan + single-shot edge detection. |
+| **Key Processing** | Software delay `delay_ms(20)`; blocks CPU and freezes display refresh. | Non-blocking matrix scan + single-shot edge detection + press & hold auto-repeat fast scroll. |
 | **Fault Recovery** | Default weak `HardFault_Handler B .` hangs MCU permanently. | Defensive handler calling `NVIC_SystemReset()` for self-healing reboot. |
 
 ---

@@ -268,6 +268,10 @@ sequenceDiagram
    - *Issue*: Interrupt set `Error = 1` on NACK, but driver functions never cleared it, permanently blocking subsequent transactions.
    - *Fix*: Added `Error = 0;` at the beginning of `I2C0_Read()` and `I2C0_Write()`.
 
+8. **Key Auto-Repeat (Press & Hold Fast Scroll)**:
+   - *Issue*: Adjusting 59 minutes required pressing a button manually 59 times continuously, causing user fatigue.
+   - *Fix*: Implemented a 2-phase key repeat state machine (**Hold Delay $500\text{ms} \rightarrow$ Repeat Rate $100\text{ms}$**) for SW6 (`KEY_PLUS`) and SW10 (`KEY_MINUS`), enabling smooth auto-scroll at 10 increments/second during button hold.
+
 ---
 
 ## 13. Mathematical Calculations and Hardware Timing Proofs

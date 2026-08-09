@@ -268,6 +268,10 @@ sequenceDiagram
    - *Vấn đề*: Trong ngắt `I2C0.c`, tín hiệu NACK thiết lập `Error = 1`. Do các hàm giao tiếp thiếu cơ chế tái lập cờ lỗi, một sự cố truyền nhận tạm thời sẽ khóa toàn bộ các lệnh đọc/ghi tiếp theo.
    - *Giải pháp*: Bổ sung lệnh reset cờ `Error = 0;` tại điểm khởi đầu của cả hai hàm `I2C0_Read()` và `I2C0_Write()`.
 
+8. **Tính Năng Nhấn Giữ Tự Động Cuộn Số Nhanh (Key Auto-Repeat / Fast Scroll)**:
+   - *Vấn đề*: Người dùng muốn chỉnh 59 phút phải thực hiện nhấn phím thủ công 59 lần liên tục gây mỏi tay.
+   - *Giải pháp*: Tích hợp giải thuật máy trạng thái lặp phím 2 pha (**Hold Delay $500\text{ms} \rightarrow$ Repeat Rate $100\text{ms}$**) dành riêng cho hai phím SW6 (`KEY_PLUS`) và SW10 (`KEY_MINUS`), tự động cuộn nâng/hạ số mượt mà với tốc độ 10 số / giây khi nhấn giữ.
+
 ---
 
 ## 13. Chứng Minh Toán Học & Tính Toán Xung Nhịp

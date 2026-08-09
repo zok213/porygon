@@ -176,12 +176,25 @@ uint8_t I2C0_Read(uint16_t eeprom_adr, uint8_t read_num) {
     ...
 }
 
+```c
 uint8_t I2C0_Write(uint16_t eeprom_adr, uint8_t write_num) {
     Timeout = 0;
     Error = 0;   // Reset cờ lỗi ở đầu phiên làm việc mới
     ...
 }
 ```
+
+---
+
+### FEATURE MCU #8 — Tính năng Nhấn Giữ Tự Động Cuộn Số Nhanh (Key Auto-Repeat)
+
+#### 📍 Vị trí code
+- `MCU_Contest_2026/main_clock_skeleton.c:111-147` (`Scan_Key()`)
+
+#### 🔍 Phân tích Kỹ thuật & Trải nghiệm Người dùng
+- **Vấn đề ban đầu**: Người dùng muốn chỉnh 59 phút phải bấm tay liên tục 59 lần mỏi tay.
+- **Giải pháp Nâng cấp**: Tích hợp thuật toán **Auto-Repeat 2 Pha (Initial Delay 500ms -> Repeat Rate 100ms)** dành riêng cho hai phím SW6 (`KEY_PLUS`) và SW10 (`KEY_MINUS`).
+- **Phản ứng trên bo thật**: Khi bấm giữ phím SW6 hoặc SW10, số chạy mượt mà với tốc độ 10 số / giây, tiếng bíp phát mượt theo nhịp cuộn số. Khi nhả phím ra, số lập tức dừng lại chính xác.
 
 ---
 
