@@ -108,8 +108,9 @@ void HW_Init(void) {
     SysTick->LOAD = 11999; SysTick->VAL = 0; SysTick->CTRL = 7;
 }
 
-#define HOLD_INITIAL_DELAY_MS   500UL   // Tre 500ms ban dau truoc khi bat dau cuon so nhanh
-#define HOLD_REPEAT_RATE_MS     100UL   // Toc do cuon 100ms/nac khi nhan giu phim SW6/SW10
+#define HOLD_INITIAL_DELAY_MS   500UL   // Tre 500ms ban dau truoc khi bat dau cuon so
+#define HOLD_REPEAT_RATE_MS     250UL   // Toc do cuon 250ms/nac (4 so / giay) de LED 7 doan hien thi day du, khong bi miss/nhay koc
+#define KEY_REPEAT_FLAG         0x80
 
 uint8_t Scan_Key(void) {
     static uint8_t  last = 0;
@@ -137,13 +138,13 @@ key_detect:
         if (curr != last) {
             last = curr;
             hold_time_ms = 0;
-            return curr;
+            return curr; // Nhan lan dau: Tra ve ma phim chuan (co keu coi 0.3s)
         } else {
             hold_time_ms += delta;
             if (curr == KEY_PLUS || curr == KEY_MINUS) {
                 if (hold_time_ms >= HOLD_INITIAL_DELAY_MS) {
                     hold_time_ms -= HOLD_REPEAT_RATE_MS;
-                    return curr;
+                    return (curr | KEY_REPEAT_FLAG); // Nhan giu: Tra ve ma phim kem flag Lặp (coi KHONG keu them)
                 }
             }
         }
@@ -161,10 +162,16 @@ key_detect:
 void Process_Key(uint8_t k) {
     if (!k) return;
 
-    buzzer_beep_ms = BEEP_KEY_MS;
+    uint8_t is_repeat = (k & KEY_REPEAT_FLAG) ? 1 : 0;
+    uint8_t raw_key   = k & ~KEY_REPEAT_FLAG;
+
+    // Chi keu coi 0.3s o lan nhan phim dau tien; khi nhan giu cuon so thi coi KHONG keu nua
+    if (!is_repeat) {
+        buzzer_beep_ms = BEEP_KEY_MS;
+    }
     inactivity_ms = 0;
 
-    if (k == KEY_SETUP && system_mode < MODE_EDIT_AL_HOUR) {
+    if (raw_key == KEY_SETUP && system_mode < MODE_EDIT_AL_HOUR) {
         if (system_mode == MODE_NORMAL) {
             edit_time_hour = time_hour;
             edit_time_min = time_min;
@@ -178,7 +185,7 @@ void Process_Key(uint8_t k) {
             system_mode = MODE_NORMAL;
         }
     }
-    else if (k == KEY_ALARM && (system_mode == MODE_NORMAL || system_mode >= MODE_EDIT_AL_HOUR)) {
+    else if (raw_key == KEY_ALARM && (system_mode == MODE_NORMAL || system_mode >= MODE_EDIT_AL_HOUR)) {
         if (system_mode == MODE_NORMAL) {
             edit_alarm_hour = alarm_hour;
             edit_alarm_min  = alarm_min;
@@ -196,10 +203,10 @@ void Process_Key(uint8_t k) {
             system_mode = MODE_NORMAL;
         }
     }
-    else if ((k == KEY_PLUS || k == KEY_MINUS) && system_mode != MODE_NORMAL) {
+    else if ((raw_key == KEY_PLUS || raw_key == KEY_MINUS) && system_mode != MODE_NORMAL) {
         volatile uint8_t *h = (system_mode >= MODE_EDIT_AL_HOUR) ? &edit_alarm_hour : &edit_time_hour;
         volatile uint8_t *m = (system_mode >= MODE_EDIT_AL_HOUR) ? &edit_alarm_min  : &edit_time_min;
-        int inc = (k == KEY_PLUS) ? 1 : -1;
+        int inc = (raw_key == KEY_PLUS) ? 1 : -1;
 
         if (system_mode == MODE_EDIT_HOUR || system_mode == MODE_EDIT_AL_HOUR) {
             *h = (*h + inc + 24) % 24;
