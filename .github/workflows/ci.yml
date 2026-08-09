@@ -1,10 +1,10 @@
-name: Firmware & RTL Verification Pipeline
+name: MCU Firmware Verification Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ MCU_dev, MCU_main ]
   pull_request:
-    branches: [ main ]
+    branches: [ MCU_main ]
 
 jobs:
   firmware-static-analysis:
@@ -23,44 +23,19 @@ jobs:
       - name: Verify MCU Project Structure
         run: |
           test -f MCU_Contest_2026/main_clock_skeleton.c
+          test -f MCU_Contest_2026/I2C0.c
+          test -f MCU_Contest_2026/I2C.h
           test -f MCU_Contest_2026/Clock_Simulation.uvprojx
           test -f README.md
           echo "MCU Project structure verified successfully."
 
       - name: Run Cppcheck Static Analysis on Firmware Source
         run: |
-          cppcheck --enable=all --suppress=missingIncludeSystem --error-exitcode=1 MCU_Contest_2026/main_clock_skeleton.c || echo "Cppcheck complete with warnings."
+          cppcheck --enable=all --suppress=missingIncludeSystem --error-exitcode=1 MCU_Contest_2026/main_clock_skeleton.c MCU_Contest_2026/I2C0.c || echo "Cppcheck complete with warnings."
 
       - name: Verify ARM Syntax Compilation (ARM Cortex-M0)
         run: |
-          arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -fsyntax-only -I MCU_Contest_2026/ MCU_Contest_2026/main_clock_skeleton.c || echo "Syntax check finished."
-
-  fpga-rtl-verification:
-    name: FPGA RTL Verification
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Check FPGA Source Files Exist
-        run: |
-          test -d FPGA || mkdir -p FPGA
-          echo "FPGA directory ready."
-
-      - name: Verify FPGA Documentation
-        run: |
-          test -f README.md
-          test -f Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v\(1\).pdf
-          echo "FPGA documentation verified."
-
-      - name: Run Verilog Syntax Check (if sources exist)
-        run: |
-          if command -v iverilog &> /dev/null; then
-            find FPGA -name '*.v' -exec iverilog -t null {} + 2>&1 || echo "iverilog not available or syntax check skipped."
-          else
-            echo "iverilog not installed; skipping RTL syntax check."
-          fi
+          arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -fsyntax-only -I MCU_Contest_2026/ MCU_Contest_2026/main_clock_skeleton.c MCU_Contest_2026/I2C0.c || echo "Syntax check finished."
 
   documentation-verification:
     name: Documentation & Repository Integrity Check
@@ -75,10 +50,10 @@ jobs:
           test -f README.md
           test -f .gitignore
           test -f MCU_Contest_2026/README.md
+          test -f MCU_Contest_2026/ISSUE_ANALYSIS_DEEP_DIVE.md
           echo "Documentation files present."
 
-      - name: Verify PDF Specifications Archive
+      - name: Verify PDF Specification
         run: |
           test -f "ĐỀ THI MCU 2026.pdf"
-          test -f "ĐỀ THI FGPA 2026.docx.pdf"
-          echo "PDF Specification documents verified."
+          echo "MCU PDF Specification document verified."
