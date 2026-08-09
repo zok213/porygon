@@ -4,10 +4,35 @@ All notable changes to the Porygon FPGA & MCU framework are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses semantic-style versioning.
 
-> **Latest test candidate**: `v1.1.0-rc3` on branch **`MCU_dev`**.
-> Flash this version and run the hardware matrix in
-> [`MCU_Contest_2026/TESTING.md`](MCU_Contest_2026/TESTING.md) before any
-> merge to `MCU_main` / `release` / `main`.
+> **Branch state**: `main` = the hardware-proven **baseline (Quang build,
+> verbatim, tag `v1.0.0-quang`)**. The improved candidate lives on
+> **`MCU_dev`** (tag `v1.1.0-rc3`) until the hardware matrix in
+> [`MCU_Contest_2026/TESTING.md`](MCU_Contest_2026/TESTING.md) passes.
+
+---
+
+## [1.0.0-quang] - 2026-08-08 — main reset to the working baseline
+
+### Changed
+- **`main` now contains the hardware-proven baseline, verbatim**: the
+  firmware flashed on the board today (`main_clock_skeleton.c` + SONiX
+  `I2C0.c`/`I2C.h` + Keil project + RTE), byte-for-byte identical to the
+  pristine reference in `MCU_Contest_2026_Quang/` (hash-verified).
+- The improved firmware (rc1→rc3: debounce, audible buzzer, race-free
+  alarm, EEPROM magic/checksum, modular code, simulation, full CI) moved to
+  **`MCU_dev` only**. Nothing is lost — it remains on `MCU_dev` and in
+  `main`'s history.
+- READMEs rewritten for the baseline-first story; the baseline's known
+  defects are documented with their fixes on `MCU_dev`.
+- CI on `main` reduced to what the baseline tree supports (FPGA iverilog +
+  documentation integrity); the full verification stack (55-check
+  simulation, cppcheck, style gate, production syntax) runs on `MCU_dev`.
+
+### Why
+Per the branch policy: `main` is the known-working baseline; unproven
+improvements only ever land on development branches and merge after
+hardware validation. The board can always be restored to the exact working
+state by checking out `main` (tag `v1.0.0-quang`).
 
 ---
 

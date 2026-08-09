@@ -6,22 +6,28 @@ This guide takes the firmware from source to a fully tested board, verifies
 
 ## 0. Which version to flash (branch discipline)
 
-The new firmware is under **hardware test** — it lives on the **`MCU_dev`**
-branch (tag `v1.1.0-rc3`), NOT on production branches. `MCU_main` / `release`
-still carry the previous known-good firmware until testing passes.
+**`main` is the hardware-proven baseline** (Quang build, verbatim) — flash it
+to restore/verify the known-working state:
 
 ```bash
 git fetch origin
-git checkout -b testing origin/MCU_dev   # or: git checkout MCU_dev
-git describe --tags                       # expect: v1.1.0-rc3
-# then open MCU_Contest_2026/Clock_Simulation.uvprojx and build
+git checkout main
+git describe --tags                # expect: v1.0.0-quang (baseline)
+# open MCU_Contest_2026/Clock_Simulation.uvprojx and build
 ```
 
-> rc3 = rc2 + the **hardware-proven I2C driver** (SONiX interrupt-driven
-> library with the P0.10/P0.11 pin fix), I2C hang watchdog, and the DP
-> tick-pulse — all taken from the working board build. If you already
-> flashed rc2, **rc3 supersedes it**: rc2 still used the old polling I2C
-> driver whose pin setup may conflict with the 7-segment lines.
+**`MCU_dev` is the improved candidate under test** (tag `v1.1.0-rc3`) —
+debounce, audible buzzer, race-free alarm, EEPROM magic/checksum, modular
+code. It is NOT on `main` until this matrix passes:
+
+```bash
+git checkout MCU_dev
+git describe --tags                # expect: v1.1.0-rc3
+# open MCU_Contest_2026/Clock_Simulation.uvprojx and build
+```
+
+When all tests in §4–§6 pass, merge `MCU_dev → MCU_main → release → main`
+(per the repository branch policy).
 
 When all tests in §4–§6 pass, the merge path is:
 `MCU_dev → MCU_main → release → main` (per the repository branch policy).
@@ -170,7 +176,7 @@ Tip: before recording, run the whole flow twice — judges value a clean take ov
 
 | Symptom | Likely cause | Fix |
 | :--- | :--- | :--- |
-| Buzzer silent / very quiet | Tone not in piezo resonance range | Increase `BUZZ_HALF_PERIOD_NOP` in `buzzer.c` (250 → 400 lowers to ~3kHz). Rebuild. |
+| Buzzer silent / very quiet | Tone not in piezo resonance range | Baseline (`main`): raise `BUZZ_HALF_PERIOD_NOP` in `main_clock_skeleton.c` (80 → 200 lowers toward ~4kHz). Improved (`MCU_dev`): `buzzer.c` (250 → 400 lowers to ~3kHz). Rebuild. |
 | Keys skip states (one press = two steps) | (shouldn't happen) — debounce active | Check keypad wiring/pull-ups; ensure `GPIO2` CFG keeps pull-ups enabled (compare with EVK schematic) |
 | Clock runs 2x/4x fast | SysTick LOAD wrong for actual clock | Confirm device runs 12 MHz (`SYS0_CLKCFG_VAL=0`); LOAD must be 11999 |
 | Alarm lost after power-off | I2C write failing | Scope SCL/SDA; verify EEPROM at 0xA0; check write-cycle delay; LED indicator: record valid → magic 0xA5 |

@@ -1,4 +1,4 @@
-name: Firmware & RTL Verification Pipeline
+name: Repository Integrity Pipeline (main = baseline)
 
 on:
   push:
@@ -6,95 +6,11 @@ on:
   pull_request:
     branches: [ main ]
 
+# NOTE: `main` carries the hardware-proven baseline (Quang build, verbatim).
+# The full firmware verification stack - 55-check host simulation, cppcheck,
+# production-path syntax, clang-format style gate - runs on `MCU_dev`, where
+# the improved firmware lives. This pipeline guards the baseline tree.
 jobs:
-  simulation:
-    name: MCU Host Simulation (54 firmware checks)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Install Host Toolchain
-        run: sudo apt-get update && sudo apt-get install -y gcc
-
-      - name: Build Simulation Harness
-        run: |
-          gcc -std=c99 -Wall -Wextra -Werror -DMOCK_SIMULATION \
-              -I MCU_Contest_2026 -I MCU_Contest_2026/sim \
-              MCU_Contest_2026/main.c MCU_Contest_2026/clock.c \
-              MCU_Contest_2026/keypad.c MCU_Contest_2026/display.c \
-              MCU_Contest_2026/buzzer.c MCU_Contest_2026/eeprom.c \
-              MCU_Contest_2026/sim/SN32F400_mock.c \
-              MCU_Contest_2026/sim/sim_main.c \
-              -o clock_sim
-
-      - name: Run Firmware Checks
-        run: ./clock_sim
-
-  static-analysis:
-    name: MCU Static Analysis (cppcheck)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Install cppcheck
-        run: sudo apt-get update && sudo apt-get install -y cppcheck
-
-      - name: Run cppcheck on Firmware (host-build view)
-        run: |
-          cppcheck --enable=warning,style,performance,portability \
-                   --error-exitcode=1 --suppress=missingIncludeSystem \
-                   -DMOCK_SIMULATION -I MCU_Contest_2026 -I MCU_Contest_2026/sim \
-                   MCU_Contest_2026/main.c MCU_Contest_2026/clock.c \
-                   MCU_Contest_2026/keypad.c MCU_Contest_2026/display.c \
-                   MCU_Contest_2026/buzzer.c MCU_Contest_2026/eeprom.c
-
-  production-path:
-    name: MCU Production Path Syntax Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Install Host Toolchain
-        run: sudo apt-get update && sudo apt-get install -y gcc
-
-      - name: Syntax-check all modules (non-MOCK path, -Werror -pedantic)
-        run: |
-          # I2C0.c is the vendor SONiX driver: it needs SN32F400_Def.h from
-          # the DFP pack and is verified on hardware - excluded here by design.
-          for f in main.c clock.c keypad.c display.c buzzer.c eeprom.c; do
-            gcc -std=c99 -Wall -Wextra -Werror -pedantic -fsyntax-only \
-                -I MCU_Contest_2026 -I MCU_Contest_2026/sim \
-                "MCU_Contest_2026/$f" || exit 1
-          done
-
-  code-style:
-    name: Code Style (clang-format)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Install pinned clang-format (identical to local tooling)
-        run: |
-          pip install --quiet clang-format==22.1.8
-
-      - name: Verify firmware sources are clang-formatted
-        run: |
-          clang-format --dry-run --Werror \
-            MCU_Contest_2026/main.c MCU_Contest_2026/clock.c \
-            MCU_Contest_2026/clock.h MCU_Contest_2026/keypad.c \
-            MCU_Contest_2026/keypad.h MCU_Contest_2026/display.c \
-            MCU_Contest_2026/display.h MCU_Contest_2026/buzzer.c \
-            MCU_Contest_2026/buzzer.h MCU_Contest_2026/eeprom.c \
-            MCU_Contest_2026/eeprom.h MCU_Contest_2026/system.h \
-            MCU_Contest_2026/app.h \
-            MCU_Contest_2026/sim/sim_main.c \
-            MCU_Contest_2026/sim/SN32F400.h \
-            MCU_Contest_2026/sim/SN32F400_mock.c
-
   fpga-rtl-verification:
     name: FPGA RTL Verification (iverilog)
     runs-on: ubuntu-latest
@@ -118,41 +34,41 @@ jobs:
         run: |
           find FPGA -name '*.v' -exec iverilog -t null {} +
 
-      - name: Verify FPGA Documentation
-        run: |
-          test -f FPGA/README.md
-          echo "FPGA documentation verified."
-
   documentation:
-    name: Documentation & Repository Integrity
+    name: Documentation & Baseline Integrity
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Check Mandatory Files
+      - name: Verify Baseline Firmware Files (Quang build, verbatim)
+        run: |
+          test -f MCU_Contest_2026/main_clock_skeleton.c
+          test -f MCU_Contest_2026/I2C0.c
+          test -f MCU_Contest_2026/I2C.h
+          test -f MCU_Contest_2026/Clock_Simulation.uvprojx
+          test -f MCU_Contest_2026/RTE/Device/SN32F407F/startup_SN32F400.s
+          test -f MCU_Contest_2026/RTE/Device/SN32F407F/system_SN32F400.c
+          test -f MCU_Contest_2026/RTE/_Target_1/RTE_Components.h
+          echo "Baseline firmware files present."
+
+      - name: Check Mandatory Documents
         run: |
           test -f README.md
           test -f CHANGELOG.md
           test -f SETUP.md
           test -f .gitignore
-          test -f .github/README.md
           test -f MCU_Contest_2026/README.md
           test -f MCU_Contest_2026/TESTING.md
-          test -f MCU_Contest_2026/CHANGES_VS_ORIGINAL.md
-          test -f MCU_Contest_2026/sim/README.md
           test -f MCU_Contest_2026/Docs/README.md
           test -f MCU_Contest_2026/RTE/README.md
-          test -f MCU_Contest_2026/Clock_Simulation.uvprojx
-          test -f MCU_Contest_2026/sim/sim_main.c
-          test -f MCU_Contest_2026/sim/SN32F400.h
-          test -f MCU_Contest_2026/sim/Makefile
+          test -f MCU_Contest_2026_Quang/README.md
           test -f FPGA/README.md
-          echo "Documentation and structure verified."
+          test -f .github/README.md
+          echo "Documentation verified."
 
       - name: Verify Contest Specifications Present
         run: |
           test -f "ĐỀ THI MCU 2026.pdf"
           test -f "ĐỀ THI FGPA 2026.docx.pdf"
-          test -f "Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v (1).pdf"
           echo "Specification documents verified."

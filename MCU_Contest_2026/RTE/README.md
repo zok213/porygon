@@ -25,9 +25,11 @@ RTE/
 
 ## Important
 
-- `SN32F400.h` (the real device header) lives **inside the installed pack**
-  (`...\SONiX\SN32F4_DFP\1.1.1\Device\Include\`), not in this folder. The
-  mock header in [`../sim/`](../sim/README.md) is for host builds only and
-  is never part of the Keil compile.
+- `SN32F400.h` / `SN32F400_Def.h` (the real device headers) live **inside
+  the installed pack** (`...\SONiX\SN32F4_DFP\1.1.1\Device\Include\`), not
+  in this folder.
 - The SONiX SN32F4_DFP 1.1.1 pack is no longer on the vendor's download
   server — keep your local copy safe; a fresh machine needs it to build.
+- This is the `main` branch: the hardware-proven baseline. The improved
+  firmware on `MCU_dev` has its own `RTE/` (identical) plus a host
+  simulation layer (`sim/`) that is not present here.
