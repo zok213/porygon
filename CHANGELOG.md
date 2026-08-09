@@ -11,39 +11,106 @@ and this project uses semantic-style versioning.
 
 ---
 
-## [1.1.0-rc3] - 2026-08-08
+## Baseline — Quang's working firmware (the hardware-proven version)
 
-### Added (from the hardware-working board build)
-- **SONiX interrupt-driven I2C0 library** (`I2C0.c`/`I2C.h`, vendor
-  reference driver) adopted as the EEPROM byte-level driver. This is the
-  driver proven on the real board (folder `MCU_Contest_2026_Quang`):
-  - **Pin fix**: `PFPA` selects SCL0 = P0.10, SDA0 = P0.11 (option 2) so I2C
-    no longer collides with the 7-segment G/DP lines (the previous polling
-    driver's pin setup was suspect - its `GPIO0 CFG` write was the likely
-    conflict).
-  - Runs fully interrupt-driven: the display keeps refreshing during EEPROM
-    access (the old driver's SysTick stop/start dance was removed).
-  - I2C speed raised to 400 kHz (`SCLHT/SCLLT = 14`), ~8x faster than the
-    old 50 kHz setting.
-- **I2C hang watchdog** (`EEPROM_I2CWatchdog()` fed from the SysTick ISR):
-  if the bus stays busy >50ms the library's `Timeout` flag is forced, so a
-  stalled transaction can never hang the firmware.
-- **DP tick-pulse** (from the working board build): in NORMAL mode the
-  HH.MM separator pulses 100ms at the start of every second (real-clock
-  "tick" effect); it stays solid during edits. Verified by the simulation
-  (new check - harness is now 55 checks).
-- Keil project updated: `I2C0.c` added (7 files total).
+**Definition.** The firmware that **actually runs on the MCU** today,
+preserved in [`MCU_Contest_2026_Quang/`](MCU_Contest_2026_Quang/README.md)
+(`main_clock_skeleton.c` + SONiX `I2C0.c`/`I2C.h`). It is the starting point
+for everything in this changelog: **every change below is measured against
+this baseline**, not against the original contest skeleton.
+
+**Why it is the baseline.** It is the only version with silicon evidence:
+the I2C layer works on the board, the pins are right, the display behaves
+correctly. Register-level code that boots and runs beats register-level code
+that only compiles.
+
+**What the baseline already gets right (kept unchanged in rc3):**
+
+| Area | Baseline behaviour (proven on the board) |
+| :--- | :--- |
+| I2C driver | SONiX interrupt-driven I2C0 library - handles ACK/NACK/arbitration in the ISR |
+| I2C pins | `PFPA` = option 2: SCL0 = P0.10, SDA0 = P0.11 - no collision with the 7-seg G/DP lines |
+| I2C speed | 400 kHz (`SCLHT/SCLLT = 14`), ~8x faster than the skeleton's 50 kHz setting |
+| Display during I2C | Transfers are interrupt-driven - the 7-seg refresh never stops (the skeleton stopped/restarted SysTick around each access) |
+| I2C hang guard | SysTick watchdog: bus busy >50ms forces `Timeout`, so a stall cannot hang the firmware |
+| DP indicator | Colon tick-pulses 100ms at each second boundary in NORMAL mode; solid during edits |
+
+**What the baseline gets wrong (fixed by rc3 - see the table below):**
+
+| Defect in baseline | Impact on the board |
+| :--- | :--- |
+| Raw edge key detection (no debounce) | Contact bounce can double-fire the FSM: one SW3 press can skip an edit state |
+| Buzzer tone ~10-15 kHz (80-NOP, 10 bursts) | Inaudible on most piezo elements; ~67% SysTick ISR load during beeps |
+| Non-atomic alarm comparison | Torn read can fire the alarm one minute early |
+| Alarm 00:00 disarmed on power-off (`if (hour\|\|min)`) | Persistence inconsistency vs. the save path (which arms 00:00) |
+| No magic/checksum on the EEPROM record | Corrupted bytes silently accepted |
+| Single 312-line file, mojibake comments, stale artifacts | "Code & document" scoring + Q&A risk |
+
+**Lineage note.** rc1/rc2 below were developed from the *original contest
+skeleton* (logic-verified, no silicon proof). rc3 is the **merge point**:
+the baseline's proven hardware layer + the rc1/rc2 robustness work. Both
+lineages now live in one firmware.
+
+---
+
+## Baseline → rc3: complete change table (what / why)
+
+| Area | Baseline (Quang, working) | rc3 | Why this change |
+| :--- | :--- | :--- | :--- |
+| I2C driver | SONiX IRQ library | **Kept unchanged** | Proven on silicon; the rc2 polling driver's `GPIO0 CFG` pin setup was the prime suspect for the G/DP pin collision |
+| I2C watchdog | In `SysTick_Handler` | **Kept**, moved to `EEPROM_I2CWatchdog()` in `eeprom.c` | Same 50ms rule; moved so the ISR stays a thin dispatcher |
+| DP tick-pulse | In ISR | **Kept**, driven by `ms_in_this_sec` in `clock.c` | Same visible behaviour; counter now wraps exactly at the second boundary and is simulation-verified |
+| Key debounce | None (raw edge) | 20ms stable-input + 20ms release lockout (`keypad.c`) | One physical press = exactly one FSM event, even with bounce or a long hold - a bouncy press can no longer skip an edit state in the demo |
+| Buzzer tone | 80-NOP / 10 bursts → ~10-15 kHz | 250-NOP / 2 bursts → ~4-5 kHz (`buzzer.c`) | Piezo resonance range, audible to judges; ISR worst case ~0.5ms instead of ~0.7ms+ |
+| Alarm trigger | 3 separate volatile reads | IRQ-safe snapshot in `Clock_AlarmMatchNow()` | A SysTick rollover between the reads can no longer fire the alarm one minute early (stopwatch-proof) |
+| EEPROM record | hour@0, min@1, no validation | magic 0xA5 + hour + min + armed flag + XOR checksum (`eeprom.c`) | Blank/corrupt cells self-repair to safe defaults; a 00:00 alarm stays armed across power cycles |
+| Boot alarm restore | `if (hour\|\|min) armed=1` | armed flag persisted and restored | 00:00 alarm no longer silently disarms on power-off |
+| I2C write-cycle wait | `for (d<20000)` fixed delay | Same delay, named constant | Behaviour unchanged; self-documenting |
+| Code organisation | 2 files (312-line app + driver) | 7 modules + headers + `sim/` (`main/clock/keypad/display/buzzer/eeprom/I2C0`) | Modular structure = the "Code & document" criterion; each peripheral has one home |
+| Comments/encoding | Mojibake Vietnamese | Clean English, clang-format enforced | Judges read the code; a broken-encoding comment reads as carelessness |
+| Testability | None (board only) | Host simulation, 55 checks, CI gates | Every fix in this changelog is proven by execution, not inspection |
+| Repo hygiene | `.err` failed-build log, `.uvoptx`, `.base@` tracked | All removed/gitignored; Quang folder preserved as reference | A failed-build log in the repo is the worst first impression |
+
+---
+
+## [1.1.0-rc3] - 2026-08-08 (merge point: baseline + robustness)
+
+### Added (from baseline - hardware-proven, kept)
+- **SONiX interrupt-driven I2C0 library** (`I2C0.c`/`I2C.h`, vendor reference
+  driver). Pin fix: `PFPA` option 2 → SCL0 = P0.10, SDA0 = P0.11, so I2C
+  cannot collide with the 7-segment G/DP lines. Bus runs at 400 kHz and the
+  display keeps refreshing during transfers.
+- **I2C hang watchdog** - `EEPROM_I2CWatchdog()` fed from the SysTick ISR:
+  bus busy >50ms forces the library's `Timeout` flag so a stalled
+  transaction can never hang the firmware.
+- **DP tick-pulse** - in NORMAL mode the HH.MM separator pulses 100ms at the
+  start of every second (real-clock tick effect); solid during edits.
+  Driven by `ms_in_this_sec` (clock.c), verified by a new simulation check.
+- `MCU_Contest_2026_Quang/` committed as the **hardware-proven reference**
+  (sources + project + RTE + README; artifacts gitignored).
+
+### Added (vs baseline - robustness)
+- **Key debounce** - 20ms stable-input + 20ms release lockout. One event per
+  physical press (baseline double-fired on bounce).
+- **Audible buzzer tone** - ~4-5 kHz, burst-limited ISR (baseline ~10-15 kHz,
+  inaudible on most piezo elements).
+- **Race-free alarm trigger** - IRQ-safe snapshot (baseline could fire one
+  minute early on a torn read).
+- **EEPROM magic + checksum + armed flag** (baseline had none; 00:00 alarm
+  disarmed on power-off).
+- Modular firmware, host simulation (55 checks), real CI gates, coding
+  standard (.clang-format), documentation suite.
 
 ### Changed
 - `eeprom.c` real path rewritten on top of the vendor driver; the
-  magic/checksum/armed-flag persistence layer is unchanged.
-- `clock.c`: `ms_in_this_sec` counter (replaces the internal `t1s`) drives
-  the DP pulse and wraps exactly at the second boundary.
-- `display.c`: DP driven by the tick-pulse in NORMAL mode, solid in edits.
+  magic/checksum layer sits above it unchanged.
+- `clock.c` / `display.c` / `main.c` restructured to host the baseline
+  behaviours cleanly (watchdog in the ISR dispatcher, DP counter in clock).
 
 ### Fixed
-- None in rc3 (rc2 logic preserved; this release adopts the hardware-proven
-  I2C layer and adds the DP tick).
+- The five baseline defects listed in the table above (debounce, buzzer,
+  alarm race, 00:00 disarm, EEPROM validation) plus mojibake comments and
+  repo hygiene.
 
 ### Verification
 - Host simulation: **55/55 checks pass** (one new DP-pulse check).
@@ -57,133 +124,59 @@ and this project uses semantic-style versioning.
 
 ### Added
 - **`.clang-format` coding standard** (repo root) - 4-space indent, Allman
-  braces, 100-column limit, pointers-left. Applies to all firmware sources.
-- **CI `code-style` job** - runs the pinned `clang-format 22.1.8`
-  (`--dry-run --Werror`) over every firmware source, so the format standard
-  is enforced on every push, not just a convention.
-- **`-pedantic` on the production-path CI check** - C99-strict compilation
-  on top of `-Wall -Wextra -Werror`.
-- `SYSTICK_RELOAD_1MS` named constant in `main.c` (derivation documented:
-  12,000,000 / 1,000 - 1 = 11999 for a 1ms interrupt at the 12 MHz IHRC).
-- **Coding Standards section** in `MCU_Contest_2026/README.md`
-  (formatter, compiler discipline, static analysis, behavioural gate,
-  naming conventions).
+  braces, 100-column limit, pointers-left.
+- **CI `code-style` job** - pinned `clang-format 22.1.8` (`--dry-run
+  --Werror`) so the format standard is enforced on every push.
+- **`-pedantic` on the production-path CI check** - C99-strict.
+- `SYSTICK_RELOAD_1MS` named constant in `main.c` (12,000,000/1,000-1).
+- **Coding Standards section** in the MCU README.
 
 ### Changed
-- **Full formatting pass** over all MCU sources with the new `.clang-format`
-  - whitespace/layout only. Verified by re-running the 54-check simulation
-  (54/54 pass) and the production `-Werror -pedantic` build after the pass.
-- `Keypad_ReadRaw()`: replaced the nested ternary with explicit early
-  returns - clearer, and silences a cppcheck `knownConditionTrueFalse`
-  diagnostic.
-- `Display_Tick1ms()`: `out[]` declared `const` (cppcheck `constVariable`).
+- Full formatting pass over all MCU sources (layout only; simulation still
+  54/54, production build clean).
+- `Keypad_ReadRaw()` nested ternary → explicit early returns (clarity;
+  silences cppcheck `knownConditionTrueFalse`).
+- `Display_Tick1ms()` `out[]` declared `const` (cppcheck `constVariable`).
 
 ### Fixed
-- None - rc2 is rc1's logic, provably identical (no logic changes in this
-  release; it is a standards/documentation pass only).
+- None - rc2 is rc1's logic plus standards; no logic changes.
 
 ---
 
-## [1.1.0-rc1] - 2026-08-07
+## [1.1.0-rc1] - 2026-08-07 (first robustness release, pre-merge)
 
 ### Added
-- **Modular firmware split** - the single `main_clock_skeleton.c` (289
-  lines) was refactored into six focused modules with clean interfaces:
-  - `main.c` - hardware init, key FSM, super-loop, SysTick ISR orchestration
-  - `clock.c` - master timekeeping, alarm settings, UI shadow edit buffers
-  - `keypad.c` - 4x4 matrix scan with time-based debounce
-  - `display.c` - anti-ghosting 7SEG multiplex, blink generator, LED D6
-  - `buzzer.c` - key beep, 5s alarm ring pattern, tone generation
-  - `eeprom.c` - I2C0 driver + persistent alarm record
-  - shared state bus in `system.h`, app entry points in `app.h`
-- **Host simulation harness** (`sim/`) - the firmware logic (SysTick ISR +
-  super-loop) runs unmodified on a PC against a RAM-mocked SN32F400 device
-  layer. 54 assertions cover boot, debounce, edit FSMs, blink phases,
-  wraparound, timeout, EEPROM persistence/corruption recovery, alarm
-  firing, 5s pip-pip pattern, cancel-on-edit and midnight rollover.
-  Build with `make run`.
-- **Hardware-abstraction seams** - `Keypad_HW_*`, `Buzzer_HW_*`,
-  `Display_HW_*` isolate register access so the simulation observes the
-  real logic without duplication.
-- **Real CI gates** - the pipeline now builds + runs the simulation (fails
-  on any failed check), runs cppcheck with an error exit code, syntax-checks
-  the production path, and verifies repository structure. (Previously the
-  pipeline swallowed every failure with `|| echo`.)
-- **Keil project updated** - `Clock_Simulation.uvprojx` lists the six
-  application modules; the dead `MOCK_SIMULATION` define was removed.
-- **Branch discipline for testing** - the firmware now lives on `MCU_dev`
-  (tag `v1.1.0-rc1`) for hardware validation; `MCU_main` / `release` keep
-  the previous known-good firmware as fallback until tests pass. Documented
-  in `TESTING.md` §0.
-- **`TESTING.md`** - hardware test guide: build/flash steps,
-  requirement-by-requirement matrix (R1-R9), edge cases, demo-video script,
-  troubleshooting.
-- **`CHANGES_VS_ORIGINAL.md`** - deep comparison with the original
-  `main_clock_skeleton.c`: what changed, why, risk, and verification.
+- **Modular firmware split** - single `main_clock_skeleton.c` (289 lines)
+  refactored into `main/clock/keypad/display/buzzer/eeprom` + `system.h` +
+  `app.h`.
+- **Host simulation harness** (`sim/`) - firmware logic runs unmodified on a
+  PC against a RAM-mocked SN32F400; 54 assertions (boot, debounce, FSMs,
+  blink, wraparound, timeout, EEPROM, alarm fire, midnight rollover).
+- **Hardware-abstraction seams** (`Keypad_HW_*`, `Buzzer_HW_*`,
+  `Display_HW_*`) - simulation observes the real logic without duplication.
+- **Real CI gates** (simulation run, cppcheck, production syntax) - the
+  previous pipeline swallowed all failures with `|| echo`.
+- Keil project updated (dead `MOCK_SIMULATION` define removed).
+- `TESTING.md` (hardware matrix + demo script) and `CHANGES_VS_ORIGINAL.md`.
 
-### Changed
-- System clock documentation corrected to **12 MHz** IHRC (the abstract
-  claimed 48 MHz; the SysTick proof already used 12 MHz and the silicon
-  boots to 12 MHz via `SYS0_CLKCFG_VAL=0`).
-- Flash size documentation corrected to **32 KB** IROM (was claimed 64 KB;
-  the Keil project configures `IROM 0x7FFC`).
-- Documentation now matches the code: debounce description, EEPROM layout,
-  clock-pause-during-time-edit behaviour, watchdog status (watchdog is
-  documented as optional, not claimed as implemented).
-- All comments rewritten in clean English (the original file contained
-  mojibake Vietnamese comment remnants).
+### Fixed (same defect list the baseline inherits - see baseline table)
+- Key debounce, audible buzzer tone, race-free alarm, EEPROM
+  magic/checksum/armed flag, `LoadAlarm` return value on corrupt records.
 
 ### Removed
-- Stale build artifacts from the repository: `main_clock_skeleton.err` (a
-  failed-build log from an old toolchain), `.esym`/`.xsym`, Keil user-state
-  `uvoptx`, `.base@` backup files, `__history`.
-- Dead code: the empty `WDT_Init`/`WDT_Feed` stubs (the README previously
-  claimed a working watchdog; the claim was removed and the design note
-  explains how to add one).
-
-### Fixed
-- **Key debounce** - `keypad.c` now requires 20ms of stable input before
-  reporting a key and latches until a 20ms-stable release. A bouncy or
-  long-held press produces exactly one FSM event; the original raw edge
-  detector could double-fire on contact bounce and skip edit states.
-- **Audible buzzer tone** - tone retuned from an inaudible ~10-15 kHz to
-  ~4-5 kHz (piezo resonance range) and burst-limited so the SysTick ISR
-  stays bounded (~0.5ms worst case instead of ~0.7ms+).
-- **Race-free alarm trigger** - `Clock_AlarmMatchNow()` snapshots time and
-  alarm settings with interrupts disabled, eliminating a torn-read window
-  that could fire the alarm one minute early (or re-ring at the next
-  boundary).
-- **EEPROM magic + checksum + armed flag** - the persistent record now
-  stores magic 0xA5, hour, minute, armed flag and an XOR checksum. Blank or
-  corrupted cells are detected and repaired to safe defaults; an alarm set
-  to 00:00 stays armed across power cycles (the original disarmed it on
-  boot because arming was inferred from `hour || minute`).
-- `EEPROM_LoadAlarm()` return value corrected for the checksum-failure path
-  (previously reported "valid" for a corrupt-but-magic-matching record).
+- Stale artifacts (`.err` failed-build log, `.esym/.xsym`, `.uvoptx`,
+  `.base@`), dead `WDT_Init/Feed` stubs, mojibake comments.
 
 ### FPGA track (merged into this lineage)
-- Merged teammate's FPGA track (`e8e10cf`): `FPGA/` with `top.v`,
-  `pll_50mhz.v`, `debouncer.v`, `breathing_pwm.v`, `uart_tx.v`, `README.md`,
-  plus `SETUP.md`.
-- **Compile fixes applied during the merge** so the iverilog CI job passes:
-  `top.v` `wire` -> `reg` for `uart_start`/`uart_data`, invalid
-  `posedge !pll_locked` sensitivity list removed, `pll_50mhz.v` `locked`
-  declared `output reg`, UTF-8 BOM removed.
-- **Status: WIP skeleton - does not yet satisfy the FPGA đề bài.** Known
-  gaps: no LOW/HIGH/AUTO mode FSM (mode is hardwired), UART sends `'A'`
-  instead of `"MODE: LOW \r\n"` strings, the "PLL" module divides 24 MHz to
-  ~480 kHz (a real Gowin IP core is required), the debouncer window is
-  80 ns (needs ~10-20 ms) and emits a level instead of a single-cycle
-  pulse, and there is no `.cst` constraint file or testbench yet.
+- Teammate's FPGA skeleton (`FPGA/`, `SETUP.md`) merged with compile fixes
+  (wire→reg, invalid sensitivity list, `output reg locked`, BOM). **Status:
+  WIP - does not yet satisfy the FPGA đề bài** (see FPGA README gaps list).
 
 ---
 
 ## [1.0.0] - 2026-07-31
 
 ### Added
-- Initial release: `main_clock_skeleton.c` firmware for the SN32F407_EVK
-  (24h clock + alarm, matrix keypad, I2C EEPROM, 7SEG multiplexing, buzzer,
-  LED D6), Keil MDK project, contest specifications (MCU + FPGA PDFs),
-  repository governance (branch strategy, issue/PR templates, CI skeleton,
-  security policy), mathematical timing proofs and architecture
-  documentation.
+- Initial release: original contest skeleton firmware, Keil project, contest
+  specifications, repository governance (branch strategy, templates, CI
+  skeleton, security policy), timing proofs and architecture documentation.

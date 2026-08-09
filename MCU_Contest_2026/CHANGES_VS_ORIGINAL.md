@@ -1,5 +1,12 @@
 # Changes vs. Original `main_clock_skeleton.c` — Deep Analysis
 
+> **Baseline note**: the *working* baseline is Quang's hardware-proven build
+> ([`MCU_Contest_2026_Quang/`](../MCU_Contest_2026_Quang/README.md)). This
+> document compares the code lineage against the original *contest skeleton*
+> (which is what both the repo lineage and Quang's build started from). For
+> the baseline-relative change table (what changed, why), see
+> [`../CHANGELOG.md`](../CHANGELOG.md).
+
 This document compares the original 289-line single-file firmware
 (`main_clock_skeleton.c`, commit 9c5efdf) with the new modular firmware, and
 explains **what** changed, **why**, and **how each change was verified**.
