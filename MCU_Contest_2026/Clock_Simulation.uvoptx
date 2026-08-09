@@ -163,62 +163,82 @@
         <Ww>
           <count>1</count>
           <WinNumber>1</WinNumber>
-          <ItemText>time_hour,0x0A</ItemText>
+          <ItemText>buzzer_beep_ms,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>2</count>
           <WinNumber>1</WinNumber>
-          <ItemText>buzzer_beep_ms,0x0A</ItemText>
+          <ItemText>alarm_ringing,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>3</count>
           <WinNumber>1</WinNumber>
-          <ItemText>alarm_ringing,0x0A</ItemText>
+          <ItemText>alarm_ring_ms,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>4</count>
           <WinNumber>1</WinNumber>
-          <ItemText>alarm_ring_ms,0x0A</ItemText>
+          <ItemText>inactivity_ms,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>5</count>
           <WinNumber>1</WinNumber>
-          <ItemText>inactivity_ms,0x0A</ItemText>
+          <ItemText>blink_ms,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>6</count>
           <WinNumber>1</WinNumber>
-          <ItemText>blink_ms,0x0A</ItemText>
+          <ItemText>blink_on,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>7</count>
           <WinNumber>1</WinNumber>
-          <ItemText>blink_on,0x0A</ItemText>
+          <ItemText>time_min,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>8</count>
           <WinNumber>1</WinNumber>
-          <ItemText>time_min,0x0A</ItemText>
+          <ItemText>time_sec,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>9</count>
           <WinNumber>1</WinNumber>
-          <ItemText>time_sec,0x0A</ItemText>
+          <ItemText>\\Clock_Simulation\main_clock_skeleton.c\time_hour,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>10</count>
           <WinNumber>1</WinNumber>
-          <ItemText>\\Clock_Simulation\main_clock_skeleton.c\time_hour,0x0A</ItemText>
+          <ItemText>\\Clock_Simulation\main_clock_skeleton.c\alarm_hour,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>11</count>
           <WinNumber>1</WinNumber>
-          <ItemText>\\Clock_Simulation\main_clock_skeleton.c\alarm_hour,0x0A</ItemText>
+          <ItemText>\\Clock_Simulation\main_clock_skeleton.c\alarm_min,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>12</count>
           <WinNumber>1</WinNumber>
-          <ItemText>\\Clock_Simulation\main_clock_skeleton.c\alarm_min,0x0A</ItemText>
+          <ItemText>test_write_val</ItemText>
+        </Ww>
+        <Ww>
+          <count>13</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>system_mode</ItemText>
+        </Ww>
+        <Ww>
+          <count>14</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>test_read_val</ItemText>
+        </Ww>
+        <Ww>
+          <count>15</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>test_status</ItemText>
+        </Ww>
+        <Ww>
+          <count>16</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>system_mode</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>
@@ -276,11 +296,23 @@
       <GroupNumber>1</GroupNumber>
       <FileNumber>1</FileNumber>
       <FileType>1</FileType>
-      <tvExp>0</tvExp>
+      <tvExp>1</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\main_clock_skeleton.c</PathWithFileName>
       <FilenameWithoutPath>main_clock_skeleton.c</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
+    <File>
+      <GroupNumber>1</GroupNumber>
+      <FileNumber>2</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>1</tvExp>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>.\I2C0.c</PathWithFileName>
+      <FilenameWithoutPath>I2C0.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>

@@ -1,23 +1,65 @@
 # SN32F407 Smart Digital Clock Firmware Specification (Da Nang MCU Contest 2026)
 
+> **Navigation / Chuyển hướng Ngôn ngữ**:  
+> 🇻🇳 [Tiếng Việt — Thuyết Minh Kỹ Thuật Thư Mục MCU](#-thuyết-minh-kỹ-thuật-thư-mục-mcu-tiếng-việt)  
+> 🇬🇧 [English — MCU Firmware Specification](#-mcu-firmware-specification-english)
+
+---
+
+# 🇻🇳 THUYẾT MINH KỸ THUẬT THƯ MỤC MCU (TIẾNG VIỆT)
+
+## 1. Tóm Tắt Hệ Thống & Phạm Vi Thực Thi
+
+Tài liệu này chi tiết toàn bộ kiến trúc mã nguồn sản phẩm cho **Hệ thống Đồng hồ Số Thông minh & Báo thức Lưu trữ EEPROM** chạy trên vi điều khiển **SN32F407_EVK** (lõi ARM Cortex-M0).
+
+Hệ thống ứng dụng nguyên lý **Lập trình Nhúng Phòng thủ (Defensive Embedded Programming)**, đảm bảo quét LED 7 đoạn không chớp nháy/bóng ma, đọc ghi EEPROM I2C không nghẽn bus, chống nẩy phím bấm ma trận chính xác, và tự phục hồi khi gặp sự cố phần cứng.
+
+---
+
+## 2. Bảng Cấu Hình Chân Ngoại Vi (SN32F407_EVK Pinout)
+
+| Khối Chức Năng | Thanh Ghi / Chân MCU | Đối Tượng Phần Cứng | Chế Đồ & Cấu Hình Điện Thế |
+| :--- | :--- | :--- | :--- |
+| **Bus Thanh LED 7 Đoạn** | `GPIO0 [0..7]` | Các thanh LED (A..G, DP) | Ngõ ra Push-Pull, Mức cao (Active High) |
+| **Bus Chọn Vị Trí Số** | `GPIO1 [9..12]` | Chọn LED 7 đoạn (D1..D4) | Ngõ ra Push-Pull, Quét Đa kênh Mức cao |
+| **Quét Hàng Ma Trận Phím**| `GPIO1 [4..7]` | Chân xuất xung quét hàng | Ngõ ra Quét Mức thấp (Active Low) |
+| **Đọc Cột Ma Trận Phím** | `GPIO2 [4..7]` | Chân đọc tín hiệu cột | Ngõ vào có Điện trở Kéo lên Nội (Pull-up) |
+| **I2C0 SCL (Xung Clock)** | `GPIO0 [10]` | Xung Clock Chân AT24C02 | Open-Drain, Kéo lên Ngoại $4.7\text{k}\Omega$ |
+| **I2C0 SDA (Dữ Liệu)** | `GPIO0 [11]` | Tín hiệu Dữ liệu AT24C02 | Open-Drain, Kéo lên Ngoại $4.7\text{k}\Omega$ |
+| **Đầu Ra Còi Báo** | `GPIO3 [0]` | Còi thạch anh Piezo | Đóng ngắt qua Transistor NPN, Mức cao |
+| **LED Báo Trạng Thái** | `GPIO3 [8]` | LED Board D6 | Ngõ ra Mức thấp (Active Low) |
+
+---
+
+## 3. Giải Trình Kỹ Thuật Chi Tiết 6 Lỗi Cuộc Thi & Giải Pháp
+
+1. **Guard Boot Báo thức (`alarm_armed`)**: Giữ nguyên guard `if (alarm_hour || alarm_min) alarm_armed = 1;` khi vừa nạp EEPROM, tránh nổ chuông báo thức 5s giả khi vừa cắm điện nếu mốc báo thức là `00:00`.
+2. **Kiểm tra Kết quả Lưu EEPROM**: Trong `Process_Key()`, bắt buộc kiểm tra `if (!EEPROM_SaveAlarm(...))`. Nếu lưu xịt, phát 3 tiếng bíp dài (`buzzer_beep_ms = 900`) và giữ nguyên màn hình edit.
+3. **Driver I2C0 Ngắt Phần Cứng (`I2C0.c`)**: Sử dụng driver ngắt chuẩn hãng SONiX với bộ đệm FIFO, map đúng chân `P0.10` (SCL0) và `P0.11` (SDA0), không bị đụng chân LED 7 đoạn.
+4. **Cấu hình CMSIS & Flash Wait-State**: Gọi `SystemInit()` và `SystemCoreClockUpdate()` ở đầu `main()`, tự động cấu hình thanh ghi `SN_FLASH->LPCTRL` an toàn khi nâng clock lên 48MHz.
+5. **Tự Phục Hồi Lỗi HardFault (`HardFault_Handler`)**: Viết đè hàm C `HardFault_Handler` chứa `__disable_irq()` và `NVIC_SystemReset()`, cho phép vi điều khiển tự động Soft Reset khi gặp nhiễu.
+6. **Thuật toán ACK Polling EEPROM**: Thay thế vòng lặp NOP thô bằng thuật toán **ACK Polling** (`do { ok = I2C0_Write(1, 1); if (ok) break; } while (++poll_retry < 50);`), tự động tương thích với thời gian ghi $t_{WR}$ của EEPROM.
+7. **Xóa Cờ Lỗi Dính Cứng (Sticky Error)**: Thêm `Error = 0;` ở đầu hai hàm `I2C0_Read()` và `I2C0_Write()` để xóa trạng thái dính lỗi sau khi bị NACK ngẫu nhiên.
+
+---
+
+## 4. Hướng Dẫn Biên Dịch & Nạp Code (Keil MDK)
+
+1. Mở file project `MCU_Contest_2026/Clock_Simulation.uvprojx` trong **Keil MDK 5.3x / 5.4x**.
+2. Chọn target `Target_1` (Trình biên dịch ArmClang V6).
+3. Nhấn **F7 (Rebuild All)** — kiểm tra kết quả đạt **0 Error(s), 0 Warning(s)**.
+4. Kết nối mạch nạp **SN-Link Debugger** vào bo `SN32F407_EVK`.
+5. Nhấn **F8 (Download)** để nạp file hex vào vi điều khiển.
+
+---
+
+# 🇬🇧 MCU FIRMWARE SPECIFICATION (ENGLISH)
+
 ## System Abstract
 
 This document details the production-grade firmware architecture for the **Smart Digital Clock and Alarm System** running on the **SN32F407_EVK** evaluation board (ARM Cortex-M0 core). 
 
 The implementation applies **Defensive Embedded Programming** principles to guarantee zero-flicker display multiplexing, non-blocking I2C EEPROM storage, deterministic matrix key debouncing, and fault-tolerant finite state machine (FSM) execution.
-
----
-
-## Competition Evaluation Criteria Breakdown
-
-| Criteria Component | Weight | Implementation Strategy in Source Code |
-| :--- | :--- | :--- |
-| **Basic Digital Clock Functions** | 35% | SysTick $1\text{ms}$ ISR, 7-Segment driver $HH.MM$, $00..23$ hour rollover, $00..59$ minute rollover. |
-| **Alarm Setting & EEPROM** | 15% | I2C0 driver, AT24C02 EEPROM read/write routines, persistent memory across resets. |
-| **Bonus Features** | 10% | 30-second button inactivity timeout auto-rollback, status LED D6 blinking indicator. |
-| **Demo Video Presentation** | 20% | System test flow, edge-case verification, team presentation skills. |
-| **Code & Documentation** | 10% | Defensive programming style, modular file organization, zero compilation warnings. |
-| **Technical Defense Q&A** | 10% | Peripheral register control, race condition prevention, hardware timing defense. |
 
 ---
 
@@ -35,185 +77,22 @@ The implementation applies **Defensive Embedded Programming** principles to guar
 
 ---
 
-## Memory Architecture Map
+## Resolved Edge Cases & Defensive Features
 
-```
-SN32F407 Internal Flash Memory Map (64 KB):
-+-----------------------+ 0x0000_0000
-| Vector Table & Reset  | 
-+-----------------------+ 0x0000_00C0
-| Program Code (.text)  |
-+-----------------------+ 0x0000_FFFF
-
-SN32F407 Internal SRAM Memory Map (8 KB):
-+-----------------------+ 0x2000_0000
-| Globals & Static RAM  |
-+-----------------------+ 0x2000_0400
-| Call Stack & Heap     |
-+-----------------------+ 0x2000_1FFF
-
-External I2C EEPROM (AT24C02) Memory Map (Address 0xA0):
-+------+-----------------------+---------------------------------------+
-| Byte | Field Name            | Functional Description                |
-+------+-----------------------+---------------------------------------+
-| 0x00 | Magic Header          | Signature byte (Must equal 0xA5)      |
-| 0x01 | Alarm Hour            | Stored Alarm Hour (Range: 0..23)      |
-| 0x02 | Alarm Minute          | Stored Alarm Minute (Range: 0..59)    |
-| 0x03 | Checksum              | Validation XOR Checksum               |
-+------+-----------------------+---------------------------------------+
-```
+1. **Boot Alarm Guard (`alarm_armed`)**: Preserves boot check `if (alarm_hour || alarm_min) alarm_armed = 1;` to prevent accidental 5-second alarm bursts during initial power-on.
+2. **Checked EEPROM Save Return**: `Process_Key()` validates `EEPROM_SaveAlarm(...)`. If write fails, the UI issues 3 long error beeps (`buzzer_beep_ms = 900`) and remains in edit mode.
+3. **Hardware Interrupt I2C Driver (`I2C0.c`)**: Uses SONiX DFP interrupt-driven state machine with FIFO buffers mapped to `P0.10` (SCL0) and `P0.11` (SDA0).
+4. **CMSIS Clock & Flash Initialization**: Explicitly invokes `SystemInit()` and `SystemCoreClockUpdate()` at the start of `main()`, ensuring correct Flash wait-states (`SN_FLASH->LPCTRL`).
+5. **Self-Healing Fault Recovery (`HardFault_Handler`)**: Implements an explicit C handler calling `__disable_irq()` and `NVIC_SystemReset()`.
+6. **ACK Polling Protocol**: Replaces fixed NOP loops in `EEPROM_SaveAlarm` with hardware **ACK Polling** retries (`do { ... } while (++poll_retry < 50)`).
+7. **Sticky Error Reset**: Clears `Error = 0;` at the beginning of `I2C0_Read()` and `I2C0_Write()`.
 
 ---
 
-## System Finite State Machine (FSM) Diagram
+## Build and Flashing Instructions (Keil MDK)
 
-```mermaid
-stateDiagram-v2
-    [*] --> MODE_NORMAL : System Power On / Restore Memory
-    
-    state MODE_NORMAL {
-        [*] --> Clock_Running
-        Clock_Running --> Check_Alarm : SysTick 1ms
-        Check_Alarm --> Ring_Buzzer : Hour & Min Match (Sec == 0)
-    }
-
-    MODE_NORMAL --> MODE_EDIT_HOUR : SW3 Key Press
-    MODE_EDIT_HOUR --> MODE_EDIT_MIN : SW3 Key Press
-    MODE_EDIT_MIN --> MODE_NORMAL : SW3 Key Press (Commit Time & Reset Sec)
-
-    MODE_NORMAL --> MODE_EDIT_AL_HOUR : SW16 Key Press
-    MODE_EDIT_AL_HOUR --> MODE_EDIT_AL_MIN : SW16 Key Press
-    MODE_EDIT_AL_MIN --> MODE_NORMAL : SW16 Key Press (Save Alarm to EEPROM)
-
-    MODE_EDIT_HOUR --> MODE_NORMAL : Inactivity Timeout 30s (Rollback)
-    MODE_EDIT_MIN --> MODE_NORMAL : Inactivity Timeout 30s (Rollback)
-    MODE_EDIT_AL_HOUR --> MODE_NORMAL : Inactivity Timeout 30s (Rollback)
-    MODE_EDIT_AL_MIN --> MODE_NORMAL : Inactivity Timeout 30s (Rollback)
-```
-
----
-
-## Core Engineering Principles and Implementation Design
-
-### Principle 1: Memory Signature Validation and Boundary Clamping
-Uninitialized or corrupted EEPROM cells return `0xFF` ($255$). If referenced directly in array indexing (`seg7[255/10]`), memory corruption or out-of-bounds exceptions occur. The system implements a **Magic Header Signature** check (`0xA5`) combined with strict numerical boundary clamping.
-
-```mermaid
-flowchart TD
-    A["EEPROM Read Byte 0x00"] --> B{"Magic Signature == 0xA5?"}
-    B -- Valid --> C["Read Alarm Hour Byte 0x01 & Min Byte 0x02"]
-    B -- Invalid --> D["Initialize Default Values: 00:00"]
-    C --> E{"Hour <= 23 AND Min <= 59?"}
-    E -- Valid --> F["Load Values into Active System Memory"]
-    E -- Invalid --> D
-    D --> G["Write Magic 0xA5 & Default 00:00 to EEPROM"]
-    G --> F
-```
-
----
-
-### Principle 2: Isolated Shadow Editing Buffers and Continuous Real-Time Ticking
-Background time calculation must remain decoupled from user interface operations. Stopping the seconds counter during edit mode induces severe time drift. The firmware maintains an uninterrupted Real-Time Clock (RTC) counter in the SysTick interrupt while UI editing operates on isolated shadow variables (`edit_h`, `edit_m`).
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant ISR as "SysTick ISR (1ms)"
-    participant Master as "Master Clock RAM (time_sec, time_min, time_hour)"
-    participant UI as "UI Shadow Buffer (edit_h, edit_m)"
-    
-    ISR->>Master: Increment Master RTC continuous (Sec -> Min -> Hour)
-    Note over UI: User presses SW6 / SW10 to modify Edit Buffer
-    ISR->>UI: Read Edit Buffer for 7-Segment Blinking Display
-    Note over Master,UI: User presses SW3 / SW16 to Commit
-    UI->>Master: Atomic Copy Edit Buffer to Master Clock RAM
-```
-
----
-
-### Principle 3: Edge-Triggered Single-Shot Alarm Activation
-Comparing target time equality inside high-speed main execution loops causes thousands of re-triggering events during a single minute. The system utilizes an **Edge-Triggered Latch Flag** (`alarm_triggered_this_minute`) to ensure single-shot execution per minute boundary.
-
----
-
-### Principle 4: Anti-Ghosting 7-Segment Multiplexing
-Multiplexed displays suffer from crosstalk ghosting if segment lines transition while digit enable pins remain high. The driver enforces a 3-phase blanking sequence inside the 1ms SysTick ISR:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant ISR as "SysTick Interrupt (1ms)"
-    participant DigitBus as "GPIO1 Digit Lines (Pins 9..12)"
-    participant SegBus as "GPIO0 Segment Lines (Pins 0..7)"
-
-    ISR->>DigitBus: Phase 1: Clear All Digit Enable Lines (Blanking)
-    ISR->>SegBus: Phase 2: Write Target Digit Segment Data to Bus
-    ISR->>DigitBus: Phase 3: Assert Target Digit Enable Line High
-```
-
----
-
-### Principle 5: Matrix Key Debouncing Flowchart
-
-```mermaid
-flowchart TD
-    ScanStart(["Matrix Key Scan Triggered (Every 1ms)"]) --> DriveRow["Assert Active Row Low (GPIO1 Pins 4..7)"]
-    DriveRow --> ReadCol["Read Column Data Bus (GPIO2 Pins 4..7)"]
-    ReadCol --> KeyCheck{"Key Detected?"}
-
-    KeyCheck -- Yes --> FilterIntegrator{"5 Consecutive Samples Equal?"}
-    KeyCheck -- No --> ResetIntegrator["Reset Debounce Counter to 0"]
-
-    FilterIntegrator -- Yes --> SingleShotLock{"Key Previously Released?"}
-    FilterIntegrator -- No --> SampleWait["Increment Debounce Counter"]
-
-    SingleShotLock -- Yes --> RegisterKey["Emit Debounced Key Code (SW3, SW6, SW10, SW16)"]
-    SingleShotLock -- No --> IgnoreHold["Lockout Repeat Key Pulse"]
-
-    RegisterKey --> LockState["Set Key Pressed Latch = True"]
-    ResetIntegrator --> UnlockState["Set Key Pressed Latch = False"]
-```
-
----
-
-### Principle 6: Watchdog Supervisor Sequence Diagram
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant MainLoop as "Super-Loop (main)"
-    participant FSM as "System State Machine"
-    participant WDT as "Hardware Watchdog (WDT)"
-
-    loop Every Main Iteration
-        MainLoop->>FSM: Execute Task Health Checks
-        alt All Subsystems Healthy
-            FSM-->>MainLoop: Health Check Passed
-            MainLoop->>WDT: Issue WDT_Feed()
-        else Subsystem Locked / Invalid State
-            FSM-->>MainLoop: Health Check Failed
-            Note over MainLoop,WDT: WDT Feed Withheld
-            WDT->>WDT: Timeout Period Expires (2.0s)
-            WDT->>MainLoop: Issue Hardware System Reset
-        end
-    end
-```
-
----
-
-## Technical Comparison Matrix
-
-| Functional Module | Naive Implementation | Production Firmware Architecture |
-| :--- | :--- | :--- |
-| **EEPROM Load** | Unchecked read; system crashes on unformatted `0xFF` memory. | Magic Byte validation ($0xA5$) + Range clamping ($0..23$, $0..59$). |
-| **Clock Maintenance** | Seconds counter halted during user edit mode. | Continuous SysTick RTC background ticker; UI shadow edit buffer. |
-| **Alarm Trigger** | Polling equality check; multiple re-triggers per minute. | Edge-triggered single-shot latch (`alarm_triggered_this_minute`). |
-| **7-Segment Display** | Direct pin mutation; severe digit ghosting bleed. | 3-Phase timing sequence (Blanking $\rightarrow$ Data Load $\rightarrow$ Enable Digit). |
-| **Key Processing** | Delay loop polling (`delay_ms(20)`); causes display jitter. | Integrator filter with consecutive sample validation (5ms window). |
-| **Watchdog Supervision** | Fed inside timer ISR; fails to reset if main loop freezes. | Super-loop health check; fed exclusively in main loop cycle. |
-
----
-
-## License
-
-This software is released under the **MIT License**. Created for the **Da Nang FPGA & MCU Design Competition 2026**.
+1. Open project file `MCU_Contest_2026/Clock_Simulation.uvprojx` in **Keil MDK 5.3x / 5.4x**.
+2. Select target `Target_1` (ArmClang V6 compiler).
+3. Press **F7 (Rebuild All)** — verify output is **0 Error(s), 0 Warning(s)**.
+4. Connect **SN-Link Debugger** to board `SN32F407_EVK`.
+5. Press **F8 (Download)** to flash hex binary to target MCU.

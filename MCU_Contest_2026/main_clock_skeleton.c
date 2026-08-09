@@ -1,8 +1,10 @@
-/* =========================================================================
- * DONG HO SO - SN32F407_EVK (FIXED COMPILE ERROR)
- * ========================================================================= */
+#include "SN32F400.h"
+#include "I2C.h"                      // thu vien I2C (da fix PFPA_I2C0 -> P0.10/P0.11)
 
-#include "SN32F400.h"   
+/* Cac bien toan cuc cua thu vien I2C0.c, can truy cap tu main.c */
+extern volatile uint8_t Busy, Timeout, Error;
+extern volatile uint8_t bI2C0_TxFIFO[];
+extern volatile uint8_t bI2C0_RxFIFO[];
 
 const uint8_t seg7[10] = {0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F};
 
@@ -27,14 +29,16 @@ typedef enum {
 #define BUZZ_HALF_PERIOD_NOP 80
 #define BUZZ_BURST_CYCLES    10
 
+#define DP_PULSE_MS 100   // do rong xung DP sang moi khi sang giay moi (ms)
+
 /* ------------------------------------------------------------------- */
 volatile SystemMode_t system_mode = MODE_NORMAL;
 volatile uint8_t  time_sec = 0, time_min = 0, time_hour = 0;
 volatile uint8_t  alarm_hour = 0, alarm_min = 0;
 volatile uint8_t  alarm_armed = 0;
 
-volatile uint8_t  edit_time_hour = 0, edit_time_min = 0; 
-volatile uint8_t  edit_alarm_hour = 0, edit_alarm_min = 0; 
+volatile uint8_t  edit_time_hour = 0, edit_time_min = 0;
+volatile uint8_t  edit_alarm_hour = 0, edit_alarm_min = 0;
 
 volatile uint32_t inactivity_ms = 0;
 volatile uint32_t blink_ms = 0;
@@ -43,44 +47,49 @@ volatile uint16_t buzzer_beep_ms = 0;
 volatile uint8_t  alarm_ringing = 0;
 volatile uint32_t alarm_ring_ms = 0;
 volatile uint8_t  buzzer_active = 0;
-volatile uint32_t system_ms_counter = 0; 
+volatile uint32_t system_ms_counter = 0;
+volatile uint16_t ms_in_this_sec = 1;   // 0..999, reset dung luc time_sec tang len 1
 
 /* =======================================================================
- * 1. GIAO TIEP EEPROM
+ * GIAO TIEP EEPROM QUA THU VIEN I2C0 CUA SONiX
+ * (Da fix I2C0_Init() trong I2C.c: set PFPA_I2C0 -> SCL0=P0.10, SDA0=P0.11
+ *  de khong dam vao chan Segment G/DP cua LED 7 doan.
+ *  Thu vien I2C0.c hien tai KHONG con tu tat/bat SysTick ben trong ham
+ *  I2C0_Read/Write nua, nen khong can goi lai SysTick->CTRL o day.)
  * ===================================================================== */
-#define I2C_WAIT() { uint32_t t = 50000; while(!(SN_I2C0->STAT & 8)) if(--t==0) return 0; }
+uint8_t EEPROM_SaveAlarm(uint8_t hour, uint8_t min) {
+    uint8_t ok;
 
-void I2C_Init(void) {
-    SN_SYS1->AHBCLKEN |= (1 << 21);
-    SN_SYS1->PRST |= (1 << 21);
-    SN_PFPA->I2C0 = (SN_PFPA->I2C0 & ~0x0F) | 0x0A;
-    SN_GPIO0->CFG = (SN_GPIO0->CFG & ~0x500000) | 0x500000;
-    SN_I2C0->SCLHT = 120; SN_I2C0->SCLLT = 120;
-    SN_I2C0->CTRL = 1;
+    // 1. Ghi byte Gio tai dia chi 0
+    Timeout = 0;
+    bI2C0_TxFIFO[0] = hour;
+    ok = I2C0_Write(0, 1);
+    if (!ok) return 0;
+
+    // 2. ACK POLLING: Thu lai cho toi khi EEPROM ghi xong tWR va tra ACK
+    uint32_t poll_retry = 0;
+    do {
+        Timeout = 0;
+        bI2C0_TxFIFO[0] = min;
+        ok = I2C0_Write(1, 1);
+        if (ok) break;
+    } while (++poll_retry < 50);
+
+    return ok;
 }
 
-// Ðã s?a t? void thành uint8_t d? tuong thích v?i I2C_WAIT()
-uint8_t EEPROM_Write(uint8_t addr, uint8_t dat) {
-    SN_I2C0->CTRL |= 2; I2C_WAIT();
-    SN_I2C0->TXDATA = 0xA0; SN_I2C0->STAT = 8; I2C_WAIT();
-    SN_I2C0->TXDATA = addr; SN_I2C0->STAT = 8; I2C_WAIT();
-    SN_I2C0->TXDATA = dat;  SN_I2C0->STAT = 8; I2C_WAIT();
-    SN_I2C0->CTRL |= 4;     SN_I2C0->STAT = 8;
-    for (volatile int d = 0; d < 30000; d++); 
-    return 1;
-}
+uint8_t EEPROM_LoadAlarm(uint8_t *hour, uint8_t *min) {
+    uint8_t ok1, ok2;
 
-uint8_t EEPROM_Read(uint8_t addr) {
-    uint8_t val = 0;
-    SN_I2C0->CTRL |= 2; I2C_WAIT();
-    SN_I2C0->TXDATA = 0xA0; SN_I2C0->STAT = 8; I2C_WAIT();
-    SN_I2C0->TXDATA = addr; SN_I2C0->STAT = 8; I2C_WAIT();
-    SN_I2C0->CTRL |= 2;     SN_I2C0->STAT = 8; I2C_WAIT();
-    SN_I2C0->TXDATA = 0xA1; SN_I2C0->STAT = 8; I2C_WAIT();
-    SN_I2C0->CTRL &= ~8;    SN_I2C0->STAT = 8; I2C_WAIT();
-    val = SN_I2C0->RXDATA;
-    SN_I2C0->CTRL |= 4;     SN_I2C0->STAT = 8;
-    return val;
+    Timeout = 0;
+    ok1 = I2C0_Read(0, 1);
+    if (ok1) *hour = bI2C0_RxFIFO[0];
+
+    Timeout = 0;
+    ok2 = I2C0_Read(1, 1);
+    if (ok2) *min = bI2C0_RxFIFO[0];
+
+    return ok1 && ok2;
 }
 
 /* =======================================================================
@@ -94,7 +103,7 @@ void HW_Init(void) {
     SN_GPIO3->MODE |= 0x0101;
 
     SN_GPIO1->BCLR = 0x1E00; SN_GPIO3->BCLR = 1; SN_GPIO3->BSET = 0x100;
-    I2C_Init();
+    I2C0_Init();
 
     SysTick->LOAD = 11999; SysTick->VAL = 0; SysTick->CTRL = 7;
 }
@@ -151,8 +160,10 @@ void Process_Key(uint8_t k) {
             alarm_hour = edit_alarm_hour;
             alarm_min  = edit_alarm_min;
             alarm_armed = 1;
-            EEPROM_Write(0, alarm_hour);
-            EEPROM_Write(1, alarm_min);
+            if (!EEPROM_SaveAlarm(alarm_hour, alarm_min)) {
+                buzzer_beep_ms = BEEP_KEY_MS * 3;
+                return;
+            }
             system_mode = MODE_NORMAL;
         }
     }
@@ -179,11 +190,16 @@ void WDT_Feed(void) {}
  * 5. MAIN
  * ===================================================================== */
 int main(void) {
+    SystemInit();            // Cau hinh Clock he thong chuan
+    SystemCoreClockUpdate(); // Cap nhat Flash Wait-State & SystemCoreClock theo HCLK
+    
     HW_Init();
     WDT_Init();
 
-    alarm_hour = EEPROM_Read(0);
-    alarm_min  = EEPROM_Read(1);
+    if (!EEPROM_LoadAlarm((uint8_t*)&alarm_hour, (uint8_t*)&alarm_min)) {
+        alarm_hour = 0;
+        alarm_min  = 0;
+    }
     if (alarm_hour > 23) alarm_hour = 0;
     if (alarm_min > 59)  alarm_min  = 0;
     if (alarm_hour || alarm_min) alarm_armed = 1;
@@ -191,9 +207,9 @@ int main(void) {
     while (1) {
         WDT_Feed();
         Process_Key(Scan_Key());
-        
+
         if (system_mode != MODE_NORMAL && inactivity_ms >= TIMEOUT_MS) {
-            system_mode = MODE_NORMAL; 
+            system_mode = MODE_NORMAL;
             buzzer_beep_ms = BEEP_KEY_MS;
             inactivity_ms = 0;
         }
@@ -214,6 +230,13 @@ int main(void) {
  * 6. NGAT SYSTICK (1ms)
  * ===================================================================== */
 void SysTick_Handler(void) {
+    /* Watchdog bao ve I2C treo, vi thu vien khong tu set Timeout */
+    static uint16_t i2c_wd = 0;
+    if (Busy) {
+        if (++i2c_wd > 50) { Timeout = 1; i2c_wd = 0; }  // qua 50ms coi nhu loi
+    } else {
+        i2c_wd = 0;
+    }
     system_ms_counter++;
 
     static uint8_t scan_phase = 0;
@@ -229,9 +252,20 @@ void SysTick_Handler(void) {
         uint8_t off_h = (system_mode == MODE_EDIT_HOUR || system_mode == MODE_EDIT_AL_HOUR) && !blink_on;
         uint8_t off_m = (system_mode == MODE_EDIT_MIN  || system_mode == MODE_EDIT_AL_MIN)  && !blink_on;
 
+        /* --- DP (dau cham) nhay 1 xung ngan dong bo dung luc time_sec tang ---
+         * Chi ap dung o che do NORMAL: DP sang trong DP_PULSE_MS dau tien
+         * cua moi giay (giong hieu ung "tick" dong ho that), roi tat cho
+         * den khi time_sec tang tiep. O cac che do chinh gio/phut, giu DP
+         * sang co dinh de lam moc phan cach, tranh xung dot voi hieu ung
+         * nhap nhay cua blink_on (dung de bao hieu digit dang duoc chinh).
+         */
+        uint8_t dp_bit = (system_mode == MODE_NORMAL)
+                          ? ((ms_in_this_sec < DP_PULSE_MS) ? 0x80 : 0x00)
+                          : 0x80;
+
         uint8_t out[4] = {
             off_h ? 0 : seg7[h / 10],
-            off_h ? 0 : (seg7[h % 10] | 0x80),
+            off_h ? 0 : (seg7[h % 10] | dp_bit),
             off_m ? 0 : seg7[m / 10],
             off_m ? 0 : seg7[m % 10]
         };
@@ -244,9 +278,8 @@ void SysTick_Handler(void) {
 
     inactivity_ms++;
     if (system_mode != MODE_EDIT_HOUR && system_mode != MODE_EDIT_MIN) {
-        static uint16_t t1s = 0;
-        if (++t1s >= 1000) {
-            t1s = 0;
+        if (++ms_in_this_sec >= 1000) {
+            ms_in_this_sec = 0;
             if (++time_sec >= 60) {
                 time_sec = 0;
                 if (++time_min >= 60) {
@@ -286,4 +319,13 @@ void SysTick_Handler(void) {
     } else {
         SN_GPIO3->BSET = 0x100;
     }
+}
+
+/* =======================================================================
+ * 7. HARDFAULT HANDLER (DEFENSIVE RECOVERY)
+ * ===================================================================== */
+void HardFault_Handler(void) {
+    __disable_irq();
+    NVIC_SystemReset();
+    while (1);
 }
