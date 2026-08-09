@@ -1,5 +1,10 @@
 # SN32F407 Smart Digital Clock Firmware (Da Nang MCU Contest 2026)
 
+> **Branch banner**: this tree is the **improved candidate under test**
+> (`MCU_dev` @ `v1.1.0-rc3`). `main` carries the hardware-proven baseline
+> (Quang build, verbatim, tag `v1.0.0-quang`). This firmware merges to
+> `main` only after the [`TESTING.md`](TESTING.md) hardware matrix passes.
+
 ## System Abstract
 
 Smart 24-hour digital clock and alarm on the **SN32F407_EVK** evaluation board
@@ -147,7 +152,7 @@ layer in `eeprom.c` sits on top of this driver.
 
 The firmware logic (SysTick ISR + super-loop FSM) runs unmodified on a PC
 against RAM-mocked peripherals. The harness drives the keypad matrix, samples
-the display/buzzer/LED outputs and checks 54 assertions:
+the display/buzzer/LED outputs and checks 55 assertions:
 
 boot state / blank-EEPROM recovery, display 00.00, idle silence,
 **debounce (bouncy press = one event, hold = no repeat)**, time/alarm edit
@@ -177,7 +182,7 @@ The repository enforces a single, machine-checked coding standard:
 - **Static analysis**: cppcheck (`--enable=all --inconclusive`) runs on every
   push; the production path (non-MOCK) is currently clean.
 - **Behavioural gate**: every logic change must keep the host simulation at
-  54/54 checks (`make run`).
+  55/55 checks (`make run`).
 - **Conventions**: `UPPER_SNAKE` for macros/constants, `CamelCase` for
   functions, `snake_case` for variables, `volatile` on every ISR-shared
   variable, header include guards on every header.

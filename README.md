@@ -10,7 +10,7 @@ Two tracks, one repository:
    firmware, time-based key debounce, I2C EEPROM persistence with
    magic/checksum, anti-ghosting 7-segment multiplexing, bounded ~4-5 kHz
    buzzer tones, and a **host simulation harness that verifies all nine
-   contest requirements** (54 checks, enforced in CI).
+   contest requirements** (55 checks, enforced in CI).
 2. **FPGA track — WIP skeleton**: Gowin GW1N design (PLL, debounce, 3-mode
    PWM, UART TX, supervisor FSM) exists as RTL but does **not yet satisfy
    the FPGA đề bài**. See [FPGA status](#fpga-track-status) and
@@ -64,10 +64,10 @@ porygon/
 | Toolchain | Keil MDK 5.43, ArmClang 6.24, SONiX SN32F4_DFP 1.1.1, CMSIS 6.3.0 |
 | Code size | ~2.4 KB flash / ~0.6 KB RAM (IROM 32 KB, IRAM 8 KB, stack 512 B) |
 | Build gates | 0 errors/0 warnings · `-Wall -Wextra -Werror -pedantic` clean |
-| Behaviour gate | 54/54 host simulation checks pass (exit code 0) |
+| Behaviour gate | 55/55 host simulation checks pass (exit code 0) |
 | Style gate | clang-format enforced in CI |
 | Static analysis | cppcheck clean on both build paths |
-| Test status | **v1.1.0-rc2 on `MCU_dev` — awaiting hardware validation** |
+| Test status | **v1.1.0-rc3 on `MCU_dev` — the improved candidate, awaiting hardware validation** |
 
 ### System Architecture
 
@@ -202,7 +202,7 @@ abstraction seams (`Keypad_HW_*`, `Buzzer_HW_*`, `Display_HW_*`) that the
 simulation overrides — nothing is re-implemented for testing.
 
 ```bash
-cd MCU_Contest_2026 && make run      # 54 checks, exit code 0 = pass
+cd MCU_Contest_2026 && make run      # 55 checks, exit code 0 = pass
 ```
 
 ```mermaid
@@ -237,17 +237,16 @@ flowchart LR
     release -->|"final verification"| main
 ```
 
-| Branch | Role | Current state (2026-08-07) |
+| Branch | Role | Current state |
 | :--- | :--- | :--- |
-| `main` | Production release baseline | `f05428a` — contains rc2 firmware + FPGA WIP |
-| `release` | Integration staging | `9c5efdf` — previous known-good (untouched) |
-| `MCU_dev` | MCU active development + testing | `f05428a` — **v1.1.0-rc2, the hardware test candidate** |
-| `MCU_main` | MCU stable production | `9c5efdf` — old firmware fallback until tests pass |
+| `main` | Production baseline — **Quang build, verbatim** (tag `v1.0.0-quang`) | The hardware-proven firmware as flashed on the board |
+| `MCU_dev` | MCU development + testing | **THIS BRANCH** — improved candidate `v1.1.0-rc3` (baseline I2C layer + debounce, audible buzzer, race-free alarm, EEPROM magic/checksum, modular code, 55-check simulation) |
+| `MCU_main` / `release` | Stable staging | `9c5efdf` — governance baseline, updated only after the hardware matrix passes |
 | `FPGA_dev` / `FPGA_main` | FPGA development / stable | `9c5efdf` — baseline (FPGA work pending) |
 
 > The new MCU firmware is **not** merged into `MCU_main`/`release` until the
 > hardware test matrix in `TESTING.md` passes. Flash candidates are tagged
-> (`v1.1.0-rc1`, `v1.1.0-rc2`).
+> (`v1.1.0-rc1`, `v1.1.0-rc2`, `v1.1.0-rc3`).
 
 ---
 
@@ -276,7 +275,7 @@ See [FPGA/README.md](FPGA/README.md).
 
 ## How Correctness Is Proved (verification stack)
 
-1. **Host simulation** — 54 behavioural checks on the real firmware logic
+1. **Host simulation** — 55 behavioural checks on the real firmware logic
    (every push, `simulation` CI job).
 2. **Compiler discipline** — `-Wall -Wextra -Werror -pedantic` on both build
    paths (production path = the exact code that ships).

@@ -7,7 +7,7 @@ verified **without hardware** — on any laptop and in CI.
 
 ## Why this exists
 
-- Every firmware change is behaviour-proven (54 checks) before it ever
+- Every firmware change is behaviour-proven (55 checks) before it ever
   reaches a board.
 - The simulation uses the **same code that ships** — nothing is
   re-implemented for testing. Hardware access goes through abstraction seams
@@ -20,7 +20,7 @@ verified **without hardware** — on any laptop and in CI.
 | :--- | :--- |
 | `SN32F400.h` | **Mock device header** — replaces the SONiX CMSIS pack header for host builds. Provides the register objects, `SysTick`, and no-op `__disable_irq/__enable_irq`. **Never used by the Keil build.** |
 | `SN32F400_mock.c` | RAM-backed register object definitions (one instance shared by all translation units). |
-| `sim_main.c` | The harness: boots the firmware, drives the keypad matrix model, samples display/buzzer/LED outputs, runs **54 assertions**, prints a summary, exits 0/1. |
+| `sim_main.c` | The harness: boots the firmware, drives the keypad matrix model, samples display/buzzer/LED outputs, runs **55 assertions**, prints a summary, exits 0/1. |
 | `Makefile` | `make run` — build + run; `make clean`. |
 
 ## Build & run
@@ -39,11 +39,11 @@ Expected output:
 
 ```
 === SN32F407 Digital Clock - Host Simulation ===
-=== Result: 54 checks, 0 failures ===
+=== Result: 55 checks, 0 failures ===
 ALL TESTS PASSED
 ```
 
-## What the 54 checks cover
+## What the 55 checks cover
 
 | Area | Checks |
 | :--- | :--- |

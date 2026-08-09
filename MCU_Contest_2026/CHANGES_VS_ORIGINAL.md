@@ -235,7 +235,7 @@ running" cue in the demo video. Verified by a new simulation check
 
 | Gate | Result |
 | :--- | :--- |
-| Host simulation (54 checks) | **54/54 PASS** (exit code 0) |
+| Host simulation (55 checks) | **55/55 PASS** (exit code 0) |
 | Production path compile (`-Wall -Wextra -Werror`, non-MOCK) | 6/6 modules clean |
 | I2C/GPIO/SysTick register diff vs original | Byte-for-byte identical |
 | Keil project XML | Valid, 6 files, no stray defines |
