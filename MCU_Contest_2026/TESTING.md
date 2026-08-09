@@ -7,18 +7,21 @@ This guide takes the firmware from source to a fully tested board, verifies
 ## 0. Which version to flash (branch discipline)
 
 The new firmware is under **hardware test** — it lives on the **`MCU_dev`**
-branch (tag `v1.1.0-rc2`), NOT on production branches. `MCU_main` / `release`
+branch (tag `v1.1.0-rc3`), NOT on production branches. `MCU_main` / `release`
 still carry the previous known-good firmware until testing passes.
 
 ```bash
 git fetch origin
 git checkout -b testing origin/MCU_dev   # or: git checkout MCU_dev
-git describe --tags                       # expect: v1.1.0-rc2
+git describe --tags                       # expect: v1.1.0-rc3
 # then open MCU_Contest_2026/Clock_Simulation.uvprojx and build
 ```
 
-> rc2 = rc1 + formatting/coding-standards pass (no logic changes; simulation
-> still 54/54). If you already flashed rc1, rc2 behaves identically.
+> rc3 = rc2 + the **hardware-proven I2C driver** (SONiX interrupt-driven
+> library with the P0.10/P0.11 pin fix), I2C hang watchdog, and the DP
+> tick-pulse — all taken from the working board build. If you already
+> flashed rc2, **rc3 supersedes it**: rc2 still used the old polling I2C
+> driver whose pin setup may conflict with the 7-segment lines.
 
 When all tests in §4–§6 pass, the merge path is:
 `MCU_dev → MCU_main → release → main` (per the repository branch policy).

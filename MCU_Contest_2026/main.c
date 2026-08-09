@@ -163,6 +163,7 @@ void SysTick_Handler(void)
 {
     system_ms_counter++;
 
+    EEPROM_I2CWatchdog(); /* protects the blocking I2C waits from hanging  */
     Clock_Tick1ms();
     Display_Tick1ms();
     Buzzer_Tick1ms();

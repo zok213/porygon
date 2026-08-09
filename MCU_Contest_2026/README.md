@@ -133,6 +133,16 @@ resonance range. The burst is kept short so the SysTick ISR stays bounded
 overridden by the simulation. This keeps all logic identical between
 hardware and host builds - nothing is duplicated.
 
+### 7. EEPROM via the hardware-proven SONiX I2C0 library
+`I2C0.c`/`I2C.h` are the SONiX interrupt-driven I2C0 reference driver,
+adopted from the working board build. `PFPA` selects SCL0 = P0.10 and
+SDA0 = P0.11 (option 2) so the bus cannot collide with the 7-segment G/DP
+lines, and the driver runs at 400 kHz with the display refreshing normally
+during transfers. `EEPROM_I2CWatchdog()` (fed from the SysTick ISR) forces
+the driver's `Timeout` flag if the bus stays busy for more than 50ms, so a
+stalled transaction can never hang the firmware. The magic/checksum record
+layer in `eeprom.c` sits on top of this driver.
+
 ## Host Simulation (Clock_Simulation)
 
 The firmware logic (SysTick ISR + super-loop FSM) runs unmodified on a PC

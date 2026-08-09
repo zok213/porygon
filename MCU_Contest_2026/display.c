@@ -20,7 +20,8 @@ static const uint8_t seg7[10] = {0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07,
 #define SEGMENT_MASK 0x00FF   /* GPIO0 bits 0..7                    */
 #define DIGIT_MASK 0x1E00     /* GPIO1 bits 9..12                   */
 #define LED_D6 0x100          /* GPIO3 bit 8, active low            */
-#define BLINK_PERIOD_MS 500UL /* 500ms on / 500ms off = 1s period   */
+#define BLINK_PERIOD_MS 500UL /* 500ms on / 500ms off = 1s period */
+#define DP_PULSE_MS 100UL     /* DP tick-pulse width in NORMAL mode */
 
 /* ------------------------------------------------------------------------- */
 /* Hardware abstraction: real-board implementation.                          */
@@ -69,7 +70,16 @@ void Display_Tick1ms(void)
         uint8_t off_m =
             (system_mode == MODE_EDIT_MIN || system_mode == MODE_EDIT_AL_MIN) && !blink_on;
 
-        const uint8_t out[4] = {off_h ? 0 : seg7[h / 10], off_h ? 0 : (seg7[h % 10] | SEG_DP),
+        /* DP behaviour (hardware-verified on the board):
+         *  - NORMAL : short tick-pulse at the start of every second
+         *             (real-clock "tick" effect), off for the rest.
+         *  - EDIT   : solid DP as the HH.MM separator (never conflicts with
+         *             the blink effect - blink only blanks digits). */
+        uint8_t dp_bit = (system_mode == MODE_NORMAL)
+                             ? ((ms_in_this_sec < DP_PULSE_MS) ? SEG_DP : 0x00)
+                             : SEG_DP;
+
+        const uint8_t out[4] = {off_h ? 0 : seg7[h / 10], off_h ? 0 : (seg7[h % 10] | dp_bit),
                                 off_m ? 0 : seg7[m / 10], off_m ? 0 : seg7[m % 10]};
 
         SN_GPIO0->BSET = out[dig];

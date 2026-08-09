@@ -173,6 +173,44 @@ user-state files, `.base@` backups.
 **Why**: "Code & document" and Q&A — a judge opening the repo should not see
 a failed-build log or claims the code cannot back up.
 
+### C9 — Hardware-proven I2C driver adopted (rc3)
+
+**Source**: the working board build (`MCU_Contest_2026_Quang` folder).
+
+**Original (repo)**: a hand-written polling driver on `SN_I2C0` STAT/CTRL
+bits with a `GPIO0->CFG` pin write. **This driver was never proven on the
+board** — the working build's comments report that the original pin setup
+collided with the 7-segment G/DP lines (the polling driver's `CFG` write is
+the prime suspect).
+
+**New**: the SONiX interrupt-driven I2C0 reference library
+(`I2C0.c`/`I2C.h`), byte-for-byte the driver running on the board, with:
+- `PFPA` = option 2 for SCL0=P0.10 / SDA0=P0.11 (no `GPIO0->CFG` write),
+- 400 kHz bus speed (`SCLHT/SCLLT=14`),
+- interrupt-driven transfers (display refresh unaffected),
+- an application-level hang watchdog (`EEPROM_I2CWatchdog`, 50ms) because
+  the library's blocking waits only exit on `Busy`/`Timeout`.
+
+**Why**: hardware-verified beats logic-verified for register-level code.
+Adopting the proven driver removes the single largest hardware risk in the
+repo firmware.
+
+**Verification**: host simulation 55/55 (EEPROM logic runs on the mock
+layer, unaffected by the driver swap); production path compiles clean
+(`I2C0.c` itself needs `SN32F400_Def.h` from the SONiX pack, so it is
+excluded from host checks and verified on the board).
+
+### C10 — DP tick-pulse (rc3)
+
+**Source**: the working board build. In NORMAL mode the HH.MM separator DP
+pulses for 100ms at the start of each second (real-clock tick effect) and
+stays solid during edits. Implemented via `ms_in_this_sec` in `clock.c`
+(wraps exactly at the second boundary) and consumed by `display.c`.
+
+**Why**: matches the physical board behaviour; also a nice "clock is
+running" cue in the demo video. Verified by a new simulation check
+(harness is now 55 checks).
+
 ---
 
 ## 3. Risk register

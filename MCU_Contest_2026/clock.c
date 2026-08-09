@@ -26,6 +26,9 @@ volatile uint8_t edit_time_min = 0;
 volatile uint8_t edit_alarm_hour = 0;
 volatile uint8_t edit_alarm_min = 0;
 
+/* Milliseconds within the current second (drives the DP tick-pulse). */
+volatile uint16_t ms_in_this_sec = 1;
+
 /* ------------------------------------------------------------------------- */
 void Clock_LoadAlarmFromEEPROM(void)
 {
@@ -98,20 +101,19 @@ void Clock_Tick1ms(void)
         return;
     }
 
-    static uint16_t t1s = 0;
-    if (++t1s < 1000)
+    /* ms_in_this_sec drives the DP tick-pulse: it wraps to 0 at the exact
+     * moment time_sec increments (second boundary). */
+    if (++ms_in_this_sec >= 1000)
     {
-        return;
-    }
-    t1s = 0;
-
-    if (++time_sec >= 60)
-    {
-        time_sec = 0;
-        if (++time_min >= 60)
+        ms_in_this_sec = 0;
+        if (++time_sec >= 60)
         {
-            time_min = 0;
-            time_hour = (uint8_t)((time_hour + 1) % 24);
+            time_sec = 0;
+            if (++time_min >= 60)
+            {
+                time_min = 0;
+                time_hour = (uint8_t)((time_hour + 1) % 24);
+            }
         }
     }
 }

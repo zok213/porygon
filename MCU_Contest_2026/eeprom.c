@@ -2,16 +2,18 @@
  * eeprom.c - AT24C02 EEPROM over I2C0 with magic/checksum persistence
  * SN32F407_EVK Digital Clock - Da Nang MCU Contest 2026
  *
- * The byte-level I2C driver is unchanged from the hardware-verified build
- * (polling on STAT bit 3, write-cycle delay loop). On top of it a persistent
- * record with magic header + XOR checksum guards the alarm settings, so a
- * blank or corrupted EEPROM can never boot the clock into invalid values.
+ * The byte-level driver is the SONiX interrupt-driven I2C0 library
+ * (I2C0.c/I2C.h) - the hardware-verified version running on the board
+ * (SCL0=P0.10, SDA0=P0.11, option 2). On top of it a persistent record with
+ * magic header + XOR checksum guards the alarm settings, so a blank or
+ * corrupted EEPROM can never boot the clock into invalid values.
  *
  * When built with -DMOCK_SIMULATION the driver is replaced by a RAM-backed
  * simulation so the whole firmware can be compiled and tested on a host PC.
  * ==========================================================================*/
 
 #include "eeprom.h"
+#include "I2C.h" /* SONiX interrupt-driven I2C0 driver (real hardware path) */
 #include "system.h"
 
 /* ------------------------- Persistent record layout ---------------------- */
@@ -21,8 +23,6 @@
 #define EEPROM_ADDR_MIN 2
 #define EEPROM_ADDR_ARMED 3
 #define EEPROM_ADDR_CKSUM 4
-
-#define WRITE_CYCLE_DELAY 30000 /* AT24C02 needs ~5ms per page write    */
 
 /* ===========================================================================
  * Host simulation build (no I2C hardware): RAM-backed EEPROM.
@@ -50,77 +50,79 @@ uint8_t EEPROM_ReadByte(uint8_t addr)
 }
 
 /* ===========================================================================
- * Real hardware build: I2C0 driver (hardware-verified sequence).
+ * Real hardware build: SONiX interrupt-driven I2C0 library (I2C0.c).
+ * This driver is hardware-verified on the board (SCL0 = P0.10, SDA0 = P0.11
+ * option 2 - the polling driver's pin setup collided with the 7-segment
+ * G/DP lines). The library blocks with Busy/Timeout handshakes, so the
+ * application must feed EEPROM_I2CWatchdog() from the 1ms SysTick ISR.
  * =========================================================================*/
 #else
 
-#define I2C_WAIT()                                                                                 \
-    {                                                                                              \
-        uint32_t t = 50000;                                                                        \
-        while (!(SN_I2C0->STAT & 8))                                                               \
-            if (--t == 0)                                                                          \
-                return 0;                                                                          \
-    }
+/* FIFOs and handshake flags, defined in I2C0.c. */
+extern volatile uint8_t bI2C0_TxFIFO[];
+extern volatile uint8_t bI2C0_RxFIFO[];
+extern volatile uint8_t Busy, Timeout;
+
+#define I2C_WRITE_CYCLE_DELAY 20000UL /* EEPROM internal write ~5ms        */
 
 void EEPROM_Init(void)
 {
-    SN_SYS1->AHBCLKEN |= (1 << 21);                         /* enable I2C0 clock    */
-    SN_SYS1->PRST |= (1 << 21);                             /* release reset        */
-    SN_PFPA->I2C0 = (SN_PFPA->I2C0 & ~0x0F) | 0x0A;         /* I2C0 pin function    */
-    SN_GPIO0->CFG = (SN_GPIO0->CFG & ~0x500000) | 0x500000; /* open-drain   */
-    SN_I2C0->SCLHT = 120;
-    SN_I2C0->SCLLT = 120;
-    SN_I2C0->CTRL = 1;
+    I2C0_Init(); /* vendor driver init: clock, pins (P0.10/P0.11), NVIC    */
 }
 
 uint8_t EEPROM_WriteByte(uint8_t addr, uint8_t dat)
 {
-    SN_I2C0->CTRL |= 2;
-    I2C_WAIT(); /* start                */
-    SN_I2C0->TXDATA = 0xA0;
-    SN_I2C0->STAT = 8;
-    I2C_WAIT(); /* device+W   */
-    SN_I2C0->TXDATA = addr;
-    SN_I2C0->STAT = 8;
-    I2C_WAIT(); /* word addr  */
-    SN_I2C0->TXDATA = dat;
-    SN_I2C0->STAT = 8;
-    I2C_WAIT(); /* data       */
-    SN_I2C0->CTRL |= 4;
-    SN_I2C0->STAT = 8; /* stop                 */
-    for (volatile int d = 0; d < WRITE_CYCLE_DELAY; d++)
+    Timeout = 0;
+    bI2C0_TxFIFO[0] = dat;
+    if (!I2C0_Write(addr, 1))
     {
-    } /* tWR wait   */
+        return 0;
+    }
+    for (volatile uint32_t d = 0; d < I2C_WRITE_CYCLE_DELAY; d++)
+    {
+    } /* wait for the internal write cycle */
     return 1;
 }
 
 uint8_t EEPROM_ReadByte(uint8_t addr)
 {
     uint8_t val = 0;
-    SN_I2C0->CTRL |= 2;
-    I2C_WAIT(); /* start                */
-    SN_I2C0->TXDATA = 0xA0;
-    SN_I2C0->STAT = 8;
-    I2C_WAIT(); /* device+W   */
-    SN_I2C0->TXDATA = addr;
-    SN_I2C0->STAT = 8;
-    I2C_WAIT(); /* word addr  */
-    SN_I2C0->CTRL |= 2;
-    SN_I2C0->STAT = 8;
-    I2C_WAIT(); /* restart    */
-    SN_I2C0->TXDATA = 0xA1;
-    SN_I2C0->STAT = 8;
-    I2C_WAIT(); /* device+R   */
-    SN_I2C0->CTRL &= ~8;
-    SN_I2C0->STAT = 8;
-    I2C_WAIT(); /* no ACK     */
-    val = SN_I2C0->RXDATA;
-    SN_I2C0->CTRL |= 4;
-    SN_I2C0->STAT = 8; /* stop                 */
+    Timeout = 0;
+    if (I2C0_Read(addr, 1))
+    {
+        val = bI2C0_RxFIFO[0];
+    }
     return val;
 }
 
 #endif /* MOCK_SIMULATION */
+
+/* ===========================================================================
+ * I2C hang watchdog - call every 1ms from the SysTick ISR.
+ * The vendor library waits forever on Busy if a transaction stalls (it does
+ * not self-set Timeout). If the bus stays busy for more than 50ms, force
+ * Timeout so the blocking loops in I2C0_Read/Write exit with an error.
+ * =========================================================================*/
+void EEPROM_I2CWatchdog(void)
+{
+#ifdef MOCK_SIMULATION
+    /* nothing to guard in simulation */
+#else
+    static uint16_t i2c_wd = 0;
+    if (Busy)
+    {
+        if (++i2c_wd > 50)
+        {
+            Timeout = 1;
+            i2c_wd = 0;
+        }
+    }
+    else
+    {
+        i2c_wd = 0;
+    }
+#endif
+}
 
 /* ===========================================================================
  * Persistent alarm record (common to both builds).

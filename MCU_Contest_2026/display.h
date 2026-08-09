@@ -12,6 +12,10 @@
  * and the status LED D6 blinks during alarm edit modes only. */
 void Display_Tick1ms(void);
 
+/* Width of the DP tick-pulse in NORMAL mode (ms at the start of each second).
+ * Exposed so the host simulation can verify the pulse deterministically. */
+#define DP_PULSE_MS 100UL
+
 /* Hardware abstraction seam for the status LED D6 pin (GPIO3.8, active low:
  * LedOn = pin low). The host simulation overrides these to observe the LED
  * state directly. */

@@ -4,10 +4,52 @@ All notable changes to the Porygon FPGA & MCU framework are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project uses semantic-style versioning.
 
-> **Latest test candidate**: `v1.1.0-rc2` on branch **`MCU_dev`**.
+> **Latest test candidate**: `v1.1.0-rc3` on branch **`MCU_dev`**.
 > Flash this version and run the hardware matrix in
 > [`MCU_Contest_2026/TESTING.md`](MCU_Contest_2026/TESTING.md) before any
 > merge to `MCU_main` / `release` / `main`.
+
+---
+
+## [1.1.0-rc3] - 2026-08-08
+
+### Added (from the hardware-working board build)
+- **SONiX interrupt-driven I2C0 library** (`I2C0.c`/`I2C.h`, vendor
+  reference driver) adopted as the EEPROM byte-level driver. This is the
+  driver proven on the real board (folder `MCU_Contest_2026_Quang`):
+  - **Pin fix**: `PFPA` selects SCL0 = P0.10, SDA0 = P0.11 (option 2) so I2C
+    no longer collides with the 7-segment G/DP lines (the previous polling
+    driver's pin setup was suspect - its `GPIO0 CFG` write was the likely
+    conflict).
+  - Runs fully interrupt-driven: the display keeps refreshing during EEPROM
+    access (the old driver's SysTick stop/start dance was removed).
+  - I2C speed raised to 400 kHz (`SCLHT/SCLLT = 14`), ~8x faster than the
+    old 50 kHz setting.
+- **I2C hang watchdog** (`EEPROM_I2CWatchdog()` fed from the SysTick ISR):
+  if the bus stays busy >50ms the library's `Timeout` flag is forced, so a
+  stalled transaction can never hang the firmware.
+- **DP tick-pulse** (from the working board build): in NORMAL mode the
+  HH.MM separator pulses 100ms at the start of every second (real-clock
+  "tick" effect); it stays solid during edits. Verified by the simulation
+  (new check - harness is now 55 checks).
+- Keil project updated: `I2C0.c` added (7 files total).
+
+### Changed
+- `eeprom.c` real path rewritten on top of the vendor driver; the
+  magic/checksum/armed-flag persistence layer is unchanged.
+- `clock.c`: `ms_in_this_sec` counter (replaces the internal `t1s`) drives
+  the DP pulse and wraps exactly at the second boundary.
+- `display.c`: DP driven by the tick-pulse in NORMAL mode, solid in edits.
+
+### Fixed
+- None in rc3 (rc2 logic preserved; this release adopts the hardware-proven
+  I2C layer and adds the DP tick).
+
+### Verification
+- Host simulation: **55/55 checks pass** (one new DP-pulse check).
+- Production path (`-Wall -Wextra -Werror -pedantic`, non-MOCK): 6 modules
+  clean. `I2C0.c` is vendor code requiring `SN32F400_Def.h` from the SONiX
+  pack - verified on hardware, excluded from host checks by design.
 
 ---
 

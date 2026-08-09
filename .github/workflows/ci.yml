@@ -62,6 +62,8 @@ jobs:
 
       - name: Syntax-check all modules (non-MOCK path, -Werror -pedantic)
         run: |
+          # I2C0.c is the vendor SONiX driver: it needs SN32F400_Def.h from
+          # the DFP pack and is verified on hardware - excluded here by design.
           for f in main.c clock.c keypad.c display.c buzzer.c eeprom.c; do
             gcc -std=c99 -Wall -Wextra -Werror -pedantic -fsyntax-only \
                 -I MCU_Contest_2026 -I MCU_Contest_2026/sim \

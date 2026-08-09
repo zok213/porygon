@@ -248,8 +248,11 @@ int main(void)
 
     /* ---------- 2. Idle: display shows 00.00, buzzer silent, LED off -- */
     PatSet ps;
-    capture_ms(20, &ps);
-    CHECK(pat_has(&ps, SEG[0]) && pat_has(&ps, SEG[0] | 0x80), "idle: display shows 00.00");
+    /* At boot ms_in_this_sec = 1 (< DP_PULSE_MS), so the DP tick-pulse is
+     * active: both the plain digit and the DP-lit form must be rendered. */
+    capture_ms(50, &ps);
+    CHECK(pat_has(&ps, SEG[0]) && pat_has(&ps, SEG[0] | 0x80),
+          "idle: display shows 00.00 with DP tick-pulse");
     CHECK(!seen_buzzer_on(20), "idle: buzzer silent");
     CHECK(g_led == 1, "idle: LED D6 off (pin high = active-low off)");
 
@@ -305,11 +308,16 @@ int main(void)
     press(KEY_SETUP); /* -> EDIT_MIN (56 kept)       */
     press(KEY_SETUP); /* commit -> NORMAL            */
     CHECK(time_hour == 5 && time_min == 56 && time_sec == 0, "edit: commit writes 05:56");
-    capture_ms(20, &ps);
-    CHECK(pat_has(&ps, SEG[5]) && pat_has(&ps, SEG[5] | 0x80) && pat_has(&ps, SEG[5]) &&
-              pat_has(&ps, SEG[6]),
-          "display: 05.56 rendered (HH.MM with DP)");
-
+    /* DP tick-pulse: capture inside the 100ms pulse window and outside it. */
+    while (ms_in_this_sec >= DP_PULSE_MS)
+        sim_tick(1);
+    capture_ms(50, &ps);
+    CHECK(pat_has(&ps, SEG[5] | 0x80), "display: DP tick-pulse on during pulse window");
+    while (ms_in_this_sec < DP_PULSE_MS)
+        sim_tick(1);
+    capture_ms(50, &ps);
+    CHECK(pat_has(&ps, SEG[5]) && !pat_has(&ps, SEG[5] | 0x80),
+          "display: DP off outside pulse window (05.56 rendered)");
     /* ---------- 8. 30s inactivity timeout rollback ---------------------- */
     press(KEY_SETUP); /* -> EDIT_HOUR                */
     sim_tick(29000);

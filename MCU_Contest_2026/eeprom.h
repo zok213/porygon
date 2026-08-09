@@ -9,9 +9,14 @@
 /* I2C0 peripheral + GPIO0 pins 10/11 (SCL/SDA) configuration. */
 void EEPROM_Init(void);
 
-/* Low-level single byte access (blocking). */
+/* Low-level single byte access (blocking, interrupt-driven I2C0). */
 uint8_t EEPROM_WriteByte(uint8_t addr, uint8_t dat);
 uint8_t EEPROM_ReadByte(uint8_t addr);
+
+/* I2C hang watchdog: call every 1ms from the SysTick ISR. Forces the
+ * library's Timeout flag if the bus stays busy for more than 50ms, so a
+ * stalled transaction can never hang the firmware. */
+void EEPROM_I2CWatchdog(void);
 
 /* Persistent alarm storage layout:
  *   addr 0 : magic header 0xA5

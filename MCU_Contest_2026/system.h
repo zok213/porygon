@@ -57,5 +57,9 @@ extern volatile uint8_t edit_alarm_min;
 
 extern volatile uint32_t system_ms_counter; /* monotonic ms tick      */
 extern volatile uint32_t inactivity_ms;     /* ms since last key      */
+extern volatile uint16_t ms_in_this_sec;    /* 0..999 within current second
+                                               (clock.c; drives the DP
+                                               tick-pulse; frozen while
+                                               the time is being edited) */
 
 #endif /* SYSTEM_H */
