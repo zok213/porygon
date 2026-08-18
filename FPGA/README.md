@@ -26,13 +26,13 @@ Mã nguồn được thiết kế tuân thủ nghiêm ngặt các tiêu chuẩn 
 
 ## 2. Bảng Tiêu Chí Đánh Giá Cuộc Thi & Phương Án Kỹ Thuật Chi Tiết
 
-| Khối Đề Bài | Trọng Số | Yêu Cầu Kỹ Thuật Đề Bài | Phương Án Triển Khai Thực Tế Trong Mã Nguồn Verilog RTL | Điểm Số Tự Đánh Giá |
-| :--- | :---: | :--- | :--- | :---: |
-| **Khối 1: Clock, Reset & Debounce** | **2.0đ** | PLL nâng xung lên 50MHz; lọc dội phím 2 nút bấm xuất xung 1-clock. | Sử dụng IP Core `Gowin_PLLVR` ($27\text{M} \rightarrow 50\text{M}$); mạch Reset Synchronizer giữ reset $20\text{ms}$ lúc boot; 2 bộ `button_debounce` 2 tầng D-FF + counter $20\text{ms}$ + falling edge detector. | **2.0 / 2.0đ** |
-| **Khối 2: Điều Chế PWM LED** | **2.5đ** | Mode LOW 25%, Mode HIGH 100%, Mode AUTO Thở $2.0\text{s}$ không chớp giật. | Module `pwm_led_controller`: sóng mang $1\text{kHz}$ ($50,000$ nhịp clock), nấc tăng giảm $50$ nhịp/ms $\rightarrow 1,000$ nấc tăng ($1.0\text{s}$) $+ 1,000$ nấc giảm ($1.0\text{s}$) $= \mathbf{2.000\text{s}}$. | **2.5 / 2.5đ** |
-| **Khối 3: Truyền Dữ Liệu UART TX** | **2.5đ** | UART 115200 bps 8N1 phát chuỗi `"MODE: LOW\r\n"`, `"MODE: HIGH\r\n"`, `"MODE: AUTO\r\n"`. | Module `uart_tx_string`: $\text{BAUD\_DIV} = 434$ (sai số $0.006\%$), FSM phát chuỗi ASCII kèm byte `0x0D, 0x0A`, chốt `mode_latched` chống xung đột. | **2.5 / 2.5đ** |
-| **Khối 4: FSM Trung Tâm & Mô Phỏng** | **3.0đ** | Reset $\rightarrow$ LOW (phát UART); BTN1 đổi LOW ↔ HIGH; BTN2 $\rightarrow$ AUTO; BTN1 trong AUTO $\rightarrow$ LOW. Kèm Testbench & Báo cáo. | Module `top_system`: FSM trung tâm tự động gửi UART khi boot; testbench `tb_top_system_v2` tự động kiểm thử 11 ca kiểm tra; kịch bản sóng ModelSim `wavefinal.do`. | **3.0 / 3.0đ** |
-| **TỔNG ĐIỂM TOÀN KHỐI FPGA** | **10.0đ** | **Đầy đủ mã nguồn, ràng buộc .cst, mô phỏng self-checking, thuyết minh tăng tốc mô phỏng.** | **TUÂN THỦ HOÀN TOÀN 100% YÊU CẦU ĐỀ BÀI** | **10.0 / 10.0đ** |
+| Khối Đề Bài | Trọng Số | Yêu Cầu Kỹ Thuật Đề Bài | Phương Án Triển Khai Thực Tế Trong Mã Nguồn Verilog RTL |
+| :--- | :---: | :--- | :--- |
+| **Khối 1: Clock, Reset & Debounce** | **2.0đ** | PLL nâng xung lên 50MHz; lọc dội phím 2 nút bấm xuất xung 1-clock. | Sử dụng IP Core `Gowin_PLLVR` ($27\text{M} \rightarrow 50\text{M}$); mạch Reset Synchronizer giữ reset $20\text{ms}$ lúc boot; 2 bộ `button_debounce` 2 tầng D-FF + counter $20\text{ms}$ + falling edge detector. |
+| **Khối 2: Điều Chế PWM LED** | **2.5đ** | Mode LOW 25%, Mode HIGH 100%, Mode AUTO Thở $2.0\text{s}$ không chớp giật. | Module `pwm_led_controller`: sóng mang $1\text{kHz}$ ($50,000$ nhịp clock), nấc tăng giảm $50$ nhịp/ms $\rightarrow 1,000$ nấc tăng ($1.0\text{s}$) $+ 1,000$ nấc giảm ($1.0\text{s}$) $= \mathbf{2.000\text{s}}$. |
+| **Khối 3: Truyền Dữ Liệu UART TX** | **2.5đ** | UART 115200 bps 8N1 phát chuỗi `"MODE: LOW\r\n"`, `"MODE: HIGH\r\n"`, `"MODE: AUTO\r\n"`. | Module `uart_tx_string`: $\text{BAUD\_DIV} = 434$ (sai số $0.006\%$), FSM phát chuỗi ASCII kèm byte `0x0D, 0x0A`, chốt `mode_latched` chống xung đột. |
+| **Khối 4: FSM Trung Tâm & Mô Phỏng** | **3.0đ** | Reset $\rightarrow$ LOW (phát UART); BTN1 đổi LOW ↔ HIGH; BTN2 $\rightarrow$ AUTO; BTN1 trong AUTO $\rightarrow$ LOW. Kèm Testbench & Báo cáo. | Module `top_system`: FSM trung tâm tự động gửi UART khi boot; testbench `tb_top_system_v2` tự động kiểm thử 11 ca kiểm tra; kịch bản sóng ModelSim `wavefinal.do`. |
+| **TỔNG ĐIỂM TOÀN KHỐI FPGA** | **10.0đ** | **Đầy đủ mã nguồn, ràng buộc .cst, mô phỏng self-checking, thuyết minh tăng tốc mô phỏng.** | **Tuân thủ hoàn toàn 100% yêu cầu đề bài** |
 
 ---
 
