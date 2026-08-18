@@ -1,0 +1,34 @@
+# =========================================================================
+# GOWIN EDA & MODELSIM SIMULATION GITIGNORE
+# =========================================================================
+
+# Gowin EDA Synthesis and P&R Output
+impl/
+temp/
+*.db
+*.log
+*.rpt
+*.fs
+*.bin
+*.posp
+*.tr
+*.pin
+*.power.html
+
+# ModelSim / QuestaSim Simulation Artifacts
+work/
+transcript
+*.wlf
+*.vstf
+*.cov
+*.ucdb
+
+# Gowin User Specific Configs
+*.gprj.user
+
+# Temporary & Editor Files
+.DS_Store
+Thumbs.db
+*.bak
+*~
+

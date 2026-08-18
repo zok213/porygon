@@ -88,6 +88,16 @@ porygon/
 ├── ĐỀ THI MCU 2026.pdf                                   # MCU Competition Track Specification
 ├── ĐỀ THI FGPA 2026.docx.pdf                             # FPGA Competition Track Specification
 ├── Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v (1).pdf # Gowin FPGA Reference Handbook
+├── FPGA/                                                 # Gowin GW1NSR-4C RTL Sub-Repository
+│   ├── .gitignore                                        # Gowin EDA and ModelSim exclusion rules
+│   ├── README.md                                         # Master FPGA Technical Specification (Bilingual)
+│   ├── TESTING.md                                        # Self-Checking Test Matrix & Waveform Guide
+│   ├── README_SIMULATION_SCALING.md                      # Simulation Time Acceleration Methodology
+│   ├── pwm11.gprj                                        # Gowin EDA Project Configuration (Kiwi Nano 4K)
+│   ├── constr/                                           # Physical Pin Constraints (pwm11.cst)
+│   ├── src/                                              # Synthesizable RTL Modules (Top, Debounce, PWM, UART, PLL)
+│   ├── sim/                                              # Self-Checking Testbench & ModelSim Scripts (wavefinal.do)
+│   └── docs/                                             # Specification & Architecture Archive
 └── MCU_Contest_2026/                                     # Keil uVision Firmware Project Sub-Repository
     ├── .gitignore                                        # Toolchain build output exclusion rules
     ├── README.md                                         # MCU Sub-Repository Specification
