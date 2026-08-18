@@ -7,9 +7,9 @@ This document presents the complete production-grade Digital IC architecture and
 The implementation strictly follows **Defensive Digital IC Design** best practices:
 - **Clock Domain Synchronization**: Complete elimination of input metastability on button inputs and asynchronous hardware resets.
 - **Edge-Triggered Hardware Debouncing**: Complete suppression of mechanical switch contact chatter across a $20\text{ ms}$ window ($1,000,000$ clock cycles @ 50MHz) with deterministic **single-clock pulse output ($20\text{ ns}$)**.
-- **Flicker-Free 2.0s Breathing PWM Engine**: $1\text{ kHz}$ carrier frequency ($\text{ARR\_MAX} = 50,000$), 2,000 discrete brightness steps ($1,000$ up $+ 1,000$ down $\rightarrow \mathbf{2.000\text{s}}$ period).
+- **Flicker-Free 2.0s Breathing PWM Engine**: $1\text{ kHz}$ carrier frequency (`ARR_MAX = 50_000`), 2,000 discrete brightness steps ($1,000$ up $+ 1,000$ down $\rightarrow 2.000\text{ s}$ period).
 - **Latched Telemetry UART Engine**: High-accuracy $115,200\text{ bps}$ baud generation ($0.0064\%$ timing error) with `mode_latched` protection against mid-transmission corruption.
-- **Simulation Time Acceleration Methodology**: Enables rapid and complete waveform verification of the $2.0\text{s}$ breathing cycle in $40\text{ ms}$ on ModelSim while preserving 100% logic functional equivalence.
+- **Simulation Time Acceleration Methodology**: Enables rapid and complete waveform verification of the $2.0\text{ s}$ breathing cycle in $40\text{ ms}$ on ModelSim while preserving 100% logic functional equivalence.
 
 ---
 
@@ -17,9 +17,9 @@ The implementation strictly follows **Defensive Digital IC Design** best practic
 
 | Track Module | Weight | Official Competition Requirement | Hardware RTL Implementation |
 | :--- | :---: | :--- | :--- |
-| **Block 1: Clock, Reset & Debounce** | **2.0 pts** | PLL synthesis to 50MHz; 2-button debouncing with 1-clock pulse output. | `Gowin_PLLVR` IP Core ($27\text{M} \rightarrow 50\text{M}$); 20ms startup reset synchronizer; 2x `button_debounce` modules with 2-stage D-FF + 20ms counter + falling edge detector. |
-| **Block 2: PWM LED Controller** | **2.5 pts** | Mode LOW 25%, Mode HIGH 100%, Mode AUTO 2.0s flicker-free breathing. | `pwm_led_controller`: 1kHz carrier (50,000 counts), 50 counts/ms step $\rightarrow$ 1,000 steps up (1.0s) + 1,000 steps down (1.0s) = **2.000s**. |
-| **Block 3: UART TX Telemetry** | **2.5 pts** | 115200 bps 8N1 transmitting `"MODE: LOW\r\n"`, `"MODE: HIGH\r\n"`, `"MODE: AUTO\r\n"`. | `uart_tx_string`: $\text{BAUD\_DIV} = 434$ (0.0064% baud error), ASCII FSM with `\r\n` delimiters and `mode_latched` state protection. |
+| **Block 1: Clock, Reset & Debounce** | **2.0 pts** | PLL synthesis to 50MHz; 2-button debouncing with 1-clock pulse output. | `Gowin_PLLVR` IP Core ($27\text{ MHz} \rightarrow 50\text{ MHz}$); 20ms startup reset synchronizer; 2x `button_debounce` modules with 2-stage D-FF + 20ms counter + falling edge detector. |
+| **Block 2: PWM LED Controller** | **2.5 pts** | Mode LOW 25%, Mode HIGH 100%, Mode AUTO 2.0s flicker-free breathing. | `pwm_led_controller`: 1kHz carrier (50,000 counts), 50 counts/ms step $\rightarrow$ 1,000 steps up (1.0s) + 1,000 steps down (1.0s) = 2.000s. |
+| **Block 3: UART TX Telemetry** | **2.5 pts** | 115200 bps 8N1 transmitting `"MODE: LOW\r\n"`, `"MODE: HIGH\r\n"`, `"MODE: AUTO\r\n"`. | `uart_tx_string`: `BAUD_DIV = 434` (0.0064% baud error), ASCII FSM with `\r\n` delimiters and `mode_latched` state protection. |
 | **Block 4: Supervisor FSM & Sim** | **3.0 pts** | Reset $\rightarrow$ LOW (UART boot); BTN1 toggles LOW ↔ HIGH; BTN2 $\rightarrow$ AUTO; BTN1 in AUTO $\rightarrow$ LOW. Includes testbench and docs. | `top_system`: Supervisor FSM with boot telemetry; automated self-checking testbench `tb_top_system_v2` (11 test cases); ModelSim `wavefinal.do` script. |
 | **TOTAL FPGA SCORE** | **10.0 pts** | **Complete synthesizable RTL, .cst constraints, self-checking testbench, scaling report.** | **100% Full Compliance with Contest Specification** |
 
@@ -157,18 +157,23 @@ stateDiagram-v2
 ## 7. Mathematical Proofs and Calculations
 
 ### Proof 1: PLLVR Frequency Synthesis ($50.0\text{ MHz}$)
-$$f_{\text{CLKOUT}} = 27.0\text{ MHz} \times \frac{13}{7} \approx \mathbf{50.14\text{ MHz}} \approx \mathbf{50.0\text{ MHz}}$$
+- `IDIV_SEL = 6` $\rightarrow$ Input divider `IDIV = 7`
+- `FBDIV_SEL = 12` $\rightarrow$ Feedback multiplier `FBDIV = 13`
+- `ODIV_SEL = 16` $\rightarrow$ Output divider `ODIV = 1`
+
+$$f_{\text{CLKOUT}} = 27.0\text{ MHz} \times \frac{13}{7} \approx 50.14\text{ MHz} \approx 50.0\text{ MHz}$$
 
 ### Proof 2: UART Baud Rate Timing Accuracy ($115,200\text{ bps}$)
-$$\text{BAUD\_DIV} = \left\lfloor \frac{50,000,000}{115,200} \right\rceil = 434\text{ clock cycles}$$
-$$\text{Baud}_{\text{actual}} = \frac{50,000,000}{434} \approx 115,207.37\text{ bps} \rightarrow \text{Error } \mathbf{0.0064\%} \ll \pm 2.0\%$$
+$$N_{\text{baud}} = \left\lfloor \frac{50,000,000}{115,200} \right\rceil = 434\text{ clock cycles}$$
+$$\text{Baud}_{\text{actual}} = \frac{50,000,000}{434} \approx 115,207.37\text{ bps} \rightarrow \text{Error } 0.0064\% \ll \pm 2.0\%$$
 
 ### Proof 3: Zero-Collision Telemetry Guarantee
-$$t_{\text{packet}} = \frac{12 \times 10}{115,200} \approx \mathbf{1.042\text{ ms}} \ll t_{\text{debounce}} = \mathbf{20.0\text{ ms}}$$
-$$\text{Safety margin } \Delta t = 20.0\text{ ms} - 1.042\text{ ms} = \mathbf{18.958\text{ ms}} > 0$$
+$$t_{\text{packet}} = \frac{12 \times 10}{115,200} \approx 1.042\text{ ms} \ll t_{\text{debounce}} = 20.0\text{ ms}$$
+$$\text{Safety margin } \Delta t = 20.0\text{ ms} - 1.042\text{ ms} = 18.958\text{ ms} > 0$$
 
 ### Proof 4: Precise 2.0s Linear Breathing Cycle
-$$T_{\text{cycle}} = (1,000\text{ steps up} \times 1.0\text{ ms}) + (1,000\text{ steps down} \times 1.0\text{ ms}) = \mathbf{2.000\text{ seconds}}$$
+- `ARR_MAX = 50_000` counts, `STEP_VAL = 50` counts/step.
+$$T_{\text{cycle}} = (1,000\text{ steps up} \times 1.0\text{ ms}) + (1,000\text{ steps down} \times 1.0\text{ ms}) = 2.000\text{ seconds}$$
 
 ---
 

@@ -4,7 +4,7 @@
 
 Tài liệu này trình bày giải pháp kiến trúc vi mạch số (Digital IC Architecture) và mã nguồn Verilog RTL thương mại cho **Hệ Thống Điều Khiển LED Đa Chế Độ & Truyền Thông Telemetry UART 115200 bps** chạy trên chip FPGA **Gowin GW1NSR-LV4CQN48PC7/I6 (Bo mạch Kiwi Nano 4K)**.
 
-Mã nguồn được thiết kế tuân thủ nghiêm ngặt các nguyên lý **Thiết Kế Vi Mạch Số Phòng Thủ (Defensive Digital IC Design)**, giải quyết triệt để các hạn chế về thời gian thực, triệt tiêu hiện tượng lơ lửng trạng thái ngõ vào (Metastability), chống nẩy phím bấm cơ khí với độ chính xác tuyệt đối, bảo đảm điều chế PWM $1\text{ kHz}$ không nhấp nháy mắt người (Flicker-Free), truyền thông nối tiếp UART chuẩn $115,200\text{ bps}$ có chốt an toàn chống méo khung truyền, và ứng dụng phương pháp **Co Ngắn Thời Gian Mô Phỏng (Simulation Time Acceleration)** giúp kiểm chứng trọn vẹn dạng sóng $2.0\text{s}$ trên ModelSim chỉ trong $40\text{ ms}$.
+Mã nguồn được thiết kế tuân thủ nghiêm ngặt các nguyên lý **Thiết Kế Vi Mạch Số Phòng Thủ (Defensive Digital IC Design)**, giải quyết triệt để các hạn chế về thời gian thực, triệt tiêu hiện tượng lơ lửng trạng thái ngõ vào (Metastability), chống nẩy phím bấm cơ khí với độ chính xác tuyệt đối, bảo đảm điều chế PWM $1\text{ kHz}$ không nhấp nháy mắt người (Flicker-Free), truyền thông nối tiếp UART chuẩn $115,200\text{ bps}$ có chốt an toàn chống méo khung truyền, và ứng dụng phương pháp **Co Ngắn Thời Gian Mô Phỏng (Simulation Time Acceleration)** giúp kiểm chứng trọn vẹn dạng sóng $2.0\text{ s}$ trên ModelSim chỉ trong $40\text{ ms}$.
 
 ---
 
@@ -12,9 +12,9 @@ Mã nguồn được thiết kế tuân thủ nghiêm ngặt các nguyên lý **
 
 | Khối Đề Bài | Trọng Số | Yêu Cầu Kỹ Thuật Đề Bài | Phương Án Kỹ Thuật & Triển Khai Thực Tế Trong Mã Nguồn Verilog RTL |
 | :--- | :---: | :--- | :--- |
-| **Khối 1: Clock, Reset & Debounce** | **2.0đ** | PLL nâng xung lên 50MHz; lọc dội phím 2 nút bấm xuất xung 1-clock. | Sử dụng IP Core `Gowin_PLLVR` ($27\text{M} \rightarrow 50\text{M}$); mạch Reset Synchronizer giữ reset $20\text{ms}$ lúc boot; 2 bộ `button_debounce` 2 tầng D-FF + counter $20\text{ms}$ ($1,000,000$ nhịp clock) + falling edge detector. |
-| **Khối 2: Điều Chế PWM LED** | **2.5đ** | Mode LOW 25%, Mode HIGH 100%, Mode AUTO Thở $2.0\text{s}$ không chớp giật. | Module `pwm_led_controller`: sóng mang $1\text{kHz}$ ($50,000$ nhịp clock), nấc tăng giảm $50$ nhịp/ms $\rightarrow 1,000$ nấc tăng ($1.0\text{s}$) $+ 1,000$ nấc giảm ($1.0\text{s}$) $= \mathbf{2.000\text{s}}$. |
-| **Khối 3: Truyền Dữ Liệu UART TX** | **2.5đ** | UART 115200 bps 8N1 phát chuỗi `"MODE: LOW\r\n"`, `"MODE: HIGH\r\n"`, `"MODE: AUTO\r\n"`. | Module `uart_tx_string`: $\text{BAUD\_DIV} = 434$ (sai số $0.0064\% \ll \pm 2.0\%$), FSM phát chuỗi ASCII kèm byte `0x0D, 0x0A`, chốt `mode_latched` chống xung đột. |
+| **Khối 1: Clock, Reset & Debounce** | **2.0đ** | PLL nâng xung lên 50MHz; lọc dội phím 2 nút bấm xuất xung 1-clock. | Sử dụng IP Core `Gowin_PLLVR` ($27\text{ MHz} \rightarrow 50\text{ MHz}$); mạch Reset Synchronizer giữ reset $20\text{ ms}$ lúc boot; 2 bộ `button_debounce` 2 tầng D-FF + counter $20\text{ ms}$ ($1,000,000$ nhịp clock) + falling edge detector. |
+| **Khối 2: Điều Chế PWM LED** | **2.5đ** | Mode LOW 25%, Mode HIGH 100%, Mode AUTO Thở $2.0\text{ s}$ không chớp giật. | Module `pwm_led_controller`: sóng mang $1\text{ kHz}$ ($50,000$ nhịp clock), nấc tăng giảm $50$ nhịp/ms $\rightarrow 1,000$ nấc tăng ($1.0\text{ s}$) $+ 1,000$ nấc giảm ($1.0\text{ s}$) $= 2.000\text{ s}$. |
+| **Khối 3: Truyền Dữ Liệu UART TX** | **2.5đ** | UART 115200 bps 8N1 phát chuỗi `"MODE: LOW\r\n"`, `"MODE: HIGH\r\n"`, `"MODE: AUTO\r\n"`. | Module `uart_tx_string`: `BAUD_DIV = 434` (sai số $0.0064\% \ll \pm 2.0\%$), FSM phát chuỗi ASCII kèm byte `0x0D, 0x0A`, chốt `mode_latched` chống xung đột. |
 | **Khối 4: FSM Trung Tâm & Mô Phỏng** | **3.0đ** | Reset $\rightarrow$ LOW (phát UART); BTN1 đổi LOW ↔ HIGH; BTN2 $\rightarrow$ AUTO; BTN1 trong AUTO $\rightarrow$ LOW. Kèm Testbench & Báo cáo. | Module `top_system`: FSM trung tâm tự động gửi UART khi boot; testbench `tb_top_system_v2` tự động kiểm thử 11 ca kiểm tra; kịch bản sóng ModelSim `wavefinal.do`. |
 | **TỔNG ĐIỂM TOÀN KHỐI FPGA** | **10.0đ** | **Đầy đủ mã nguồn, ràng buộc .cst, mô phỏng self-checking, thuyết minh tăng tốc mô phỏng.** | **Tuân thủ hoàn toàn 100% yêu cầu đề bài** |
 
@@ -115,7 +115,7 @@ Toàn bộ chân tín hiệu được khai báo trong tệp ràng buộc vật l
 | `clk_in` | **Pin 45** | Bank 1 | `LVCMOS33` (3.3V) | `PULL_MODE=UP` | — | Xung nhịp dao động thạch anh gốc $27.0\text{ MHz}$ |
 | `rst_n_in` | **Pin 40** | Bank 1 | `LVCMOS33` (3.3V) | `PULL_MODE=UP` | — | Nút Reset phần cứng (Tích cực mức Thấp) |
 | `btn1_in` | **Pin 14** | Bank 3 | `LVCMOS18` (1.8V) | `PULL_MODE=UP` | — | Nút bấm 1: Chuyển đổi LOW ↔ HIGH / AUTO $\rightarrow$ LOW |
-| `btn2_in` | **Pin 15** | Bank 3 | `LVCMOS18` (1.8V) | `PULL_MODE=UP` | — | Nút bấm 2: Chuyển sang chế độ AUTO Thở $2.0\text{s}$ |
+| `btn2_in` | **Pin 15** | Bank 3 | `LVCMOS18` (1.8V) | `PULL_MODE=UP` | — | Nút bấm 2: Chuyển sang chế độ AUTO Thở $2.0\text{ s}$ |
 | `led_out` | **Pin 13** | Bank 3 | `LVCMOS18` (1.8V) | `PULL_MODE=NONE` | $8\text{ mA}$ | Ngõ ra xung PWM điều khiển LED2 trên bo mạch |
 | `uart_tx` | **Pin 39** | Bank 1 | `LVCMOS33` (3.3V) | `PULL_MODE=NONE` | $8\text{ mA}$ | Ngõ ra truyền UART nối tiếp qua chip nạp USB-UART |
 
@@ -158,13 +158,19 @@ stateDiagram-v2
 ### Bảng Chuyển Trạng Thái FSM & Khung Truyền UART
 | Trạng Thái Hiện Tại | Tín Hiệu Kích Hoạt | Trạng Thái Kế Tiếp | Chuỗi Ký Tự UART Phát Ra | Trạng Thái LED PWM |
 | :--- | :--- | :--- | :--- | :--- |
-| **Bất kỳ (Khởi động / Reset)** | `sys_rst_n` lên mức 1 | **Mode LOW (2'b00)** | `"MODE: LOW\r\n"` (11 bytes) | Duty Cycle $25\%$ ($1\text{kHz}$) |
-| **Mode LOW (2'b00)** | Nhấn Nút 1 (`btn1_pulse`) | **Mode HIGH (2'b01)** | `"MODE: HIGH\r\n"` (12 bytes) | Duty Cycle $100\%$ (Sáng liên tục) |
-| **Mode HIGH (2'b01)** | Nhấn Nút 1 (`btn1_pulse`) | **Mode LOW (2'b00)** | `"MODE: LOW\r\n"` (11 bytes) | Duty Cycle $25\%$ ($1\text{kHz}$) |
-| **Mode LOW (2'b00)** | Nhấn Nút 2 (`btn2_pulse`) | **Mode AUTO (2'b10)** | `"MODE: AUTO\r\n"` (12 bytes) | Hiệu ứng Thở $0\% \leftrightarrow 100\%$ ($2.0\text{s}$) |
-| **Mode HIGH (2'b01)** | Nhấn Nút 2 (`btn2_pulse`) | **Mode AUTO (2'b10)** | `"MODE: AUTO\r\n"` (12 bytes) | Hiệu ứng Thở $0\% \leftrightarrow 100\%$ ($2.0\text{s}$) |
-| **Mode AUTO (2'b10)** | Nhấn Nút 1 (`btn1_pulse`) | **Mode LOW (2'b00)** | `"MODE: LOW\r\n"` (11 bytes) | Duty Cycle $25\%$ ($1\text{kHz}$) |
-| **Mode AUTO (2'b10)** | Nhấn Nút 2 (`btn2_pulse`) | **Giữ nguyên AUTO** | *(Không phát chuỗi thừa)* | Giữ nguyên hiệu ứng Thở $2.0\text{s}$ |
+| **Bất kỳ (Khởi động / Reset)** | `sys_rst_n` lên mức 1 | **Mode LOW (2'b00)** | `"MODE: LOW
+"` (11 bytes) | Duty Cycle $25\%$ ($1\text{ kHz}$) |
+| **Mode LOW (2'b00)** | Nhấn Nút 1 (`btn1_pulse`) | **Mode HIGH (2'b01)** | `"MODE: HIGH
+"` (12 bytes) | Duty Cycle $100\%$ (Sáng liên tục) |
+| **Mode HIGH (2'b01)** | Nhấn Nút 1 (`btn1_pulse`) | **Mode LOW (2'b00)** | `"MODE: LOW
+"` (11 bytes) | Duty Cycle $25\%$ ($1\text{ kHz}$) |
+| **Mode LOW (2'b00)** | Nhấn Nút 2 (`btn2_pulse`) | **Mode AUTO (2'b10)** | `"MODE: AUTO
+"` (12 bytes) | Hiệu ứng Thở $0\% \leftrightarrow 100\%$ ($2.0\text{ s}$) |
+| **Mode HIGH (2'b01)** | Nhấn Nút 2 (`btn2_pulse`) | **Mode AUTO (2'b10)** | `"MODE: AUTO
+"` (12 bytes) | Hiệu ứng Thở $0\% \leftrightarrow 100\%$ ($2.0\text{ s}$) |
+| **Mode AUTO (2'b10)** | Nhấn Nút 1 (`btn1_pulse`) | **Mode LOW (2'b00)** | `"MODE: LOW
+"` (11 bytes) | Duty Cycle $25\%$ ($1\text{ kHz}$) |
+| **Mode AUTO (2'b10)** | Nhấn Nút 2 (`btn2_pulse`) | **Giữ nguyên AUTO** | *(Không phát chuỗi thừa)* | Giữ nguyên hiệu ứng Thở $2.0\text{ s}$ |
 
 ---
 
@@ -196,37 +202,41 @@ sequenceDiagram
 1. **Bộ đếm chu kỳ sóng mang PWM (`pwm_cnt`)**:
    - Tần số xung nhịp: $f_{\text{sys}} = 50.0\text{ MHz}$.
    - Tần số sóng mang PWM: $f_{\text{PWM}} = 1,000\text{ Hz} \rightarrow T = 1.0\text{ ms}$.
-   - Số nhịp đếm: $\text{ARR\_MAX} = \frac{50,000,000}{1,000} = 50,000\text{ nhịp}$.
+   - Số nhịp đếm: `ARR_MAX = 50_000` nhịp ($50,000\text{ counts}$).
 2. **Cấu hình độ sáng các chế độ**:
-   - **Mode LOW (25%)**: `duty_cycle = ARR_MAX / 4 = 12,500 nhịp`.
-   - **Mode HIGH (100%)**: `duty_cycle = ARR_MAX = 50,000 nhịp`.
+   - **Mode LOW (25%)**: `duty_cycle = ARR_MAX / 4 = 12_500 nhịp`.
+   - **Mode HIGH (100%)**: `duty_cycle = ARR_MAX = 50_000 nhịp`.
    - **Mode AUTO (Thở 2.0s)**:
      - Chia đều thành **2,000 nấc độ sáng** ($1,000$ nấc tăng dần $+ 1,000$ nấc giảm dần).
-     - Bước tăng/giảm mỗi $1\text{ms}$: $\text{STEP\_VAL} = \frac{50,000}{1,000} = \mathbf{50\text{ nhịp/nấc}}$.
+     - Bước tăng/giảm mỗi $1\text{ ms}$: `STEP_VAL = 50` nhịp/nấc.
      - Thời gian sáng dần ($0\% \rightarrow 100\%$): $1,000\text{ nấc} \times 1.0\text{ ms} = 1.000\text{ s}$.
      - Thời gian tối dần ($100\% \rightarrow 0\%$): $1,000\text{ nấc} \times 1.0\text{ ms} = 1.000\text{ s}$.
-     - **Tổng chu kỳ thở hoàn chỉnh**: $1.0\text{ s} + 1.0\text{ s} = \mathbf{2.000\text{ giây}}$ (Khớp chính xác tuyệt đối yêu cầu đề bài).
+     - **Tổng chu kỳ thở hoàn chỉnh**: $1.0\text{ s} + 1.0\text{ s} = 2.000\text{ giây}$ (Khớp chính xác tuyệt đối yêu cầu đề bài).
 
 ---
 
 ## 9. Kiến Trúc Bộ Truyền Telemetry UART 115200 bps & Chốt Mode
 
 1. **Bộ chia tần số Baudrate**:
-   $$\text{BAUD\_DIV} = \left\lfloor \frac{50,000,000}{115,200} \right\rceil = 434\text{ nhịp clock}$$
-   $$\text{Baud}_{\text{actual}} = \frac{50,000,000}{434} \approx 115,207.37\text{ bps} \rightarrow \text{Sai số } \mathbf{0.0064\%} \ll \pm 2.0\%$$
+   - Hệ số chia nhịp:
+     $$N_{\text{baud}} = \left\lfloor \frac{50,000,000}{115,200} \right\rceil = 434\text{ nhịp clock}$$
+   - Tốc độ thực tế thu được:
+     $$\text{Baud}_{\text{actual}} = \frac{50,000,000}{434} \approx 115,207.37\text{ bps}$$
+   - Sai số tương đối:
+     $$\text{Error} = \frac{|115,207.37 - 115,200|}{115,200} \times 100\% = 0.0064\% \ll \pm 2.0\%$$
 2. **Khung truyền chuẩn 8N1**:
    - 1 bit Start (mức 0) + 8 bit Data (truyền LSB trước) + 1 bit Stop (mức 1).
    - Tổng cộng: 10 bit cho mỗi ký tự ASCII.
 3. **Cơ chế Chốt Chế Độ An Toàn (`mode_latched`)**:
    - Khi nhận xung yêu cầu truyền `send_req`, FSM lưu ngay chế độ hiện tại vào thanh ghi `mode_latched`.
-   - Trong suốt thời gian $1.042\text{ms}$ truyền chuỗi, nếu có bất kỳ tín hiệu nhiễu hoặc thay đổi trạng thái nào, chuỗi đang phát vẫn bảo toàn nguyên vẹn 100%, không bị chắp vá ký tự.
+   - Trong suốt thời gian $1.042\text{ ms}$ truyền chuỗi, nếu có bất kỳ tín hiệu nhiễu hoặc thay đổi trạng thái nào, chuỗi đang phát vẫn bảo toàn nguyên vẹn 100%, không bị chắp vá ký tự.
 
 ---
 
 ## 10. Thuyết Minh Kỹ Thuật Co Ngắn Thời Gian Mô Phỏng (Simulation Acceleration)
 *(Trích từ Báo Cáo Kỹ Thuật [`FPGA/README_SIMULATION_SCALING.md`](FPGA/README_SIMULATION_SCALING.md))*
 
-Trong thiết kế vi mạch ASIC/FPGA chuyên nghiệp, các chu kỳ hoạt động thực tế kéo dài hàng giây (như hiệu ứng LED Thở $2.0\text{s}$) nếu chạy mô phỏng nguyên bản trên phần mềm ModelSim sẽ mất hàng triệu nhịp đếm xung clock, gây đơ giật phần mềm và tốn thời gian tính toán của máy tính.
+Trong thiết kế vi mạch ASIC/FPGA chuyên nghiệp, các chu kỳ hoạt động thực tế kéo dài hàng giây (như hiệu ứng LED Thở $2.0\text{ s}$) nếu chạy mô phỏng nguyên bản trên phần mềm ModelSim sẽ mất hàng triệu nhịp đếm xung clock, gây đơ giật phần mềm và tốn thời gian tính toán của máy tính.
 
 Do đó, dự án áp dụng kỹ thuật **Truyền đè tham số (Parameter Overriding)** để thu hẹp khoảng thời gian quan sát trên phần mềm mô phỏng nhưng **bảo toàn 100% tính đúng đắn của logic thiết kế**:
 
@@ -236,7 +246,7 @@ Do đó, dự án áp dụng kỹ thuật **Truyền đè tham số (Parameter O
 | **Chu kỳ 1 xung PWM ($T$)** | **$1.0\text{ ms}$** ($1,000\mu\text{s}$) | **$20.0\mu\text{s}$** ($20,000\text{ ns}$) | Giúp quan sát xung PWM sắc nét trên ModelSim |
 | **Độ rộng mức CAO (Mode LOW 25%)** | $250\mu\text{s}$ | $5.0\mu\text{s}$ | Tỷ lệ Duty Cycle $25\%$ giữ nguyên |
 | **Độ rộng mức CAO (Mode HIGH 100%)** | $1.0\text{ ms}$ | $20.0\mu\text{s}$ | Tỷ lệ Duty Cycle $100\%$ giữ nguyên |
-| **Chu kỳ 1 vòng Thở (AUTO)** | **$2.0\text{ giây}$** | **$40\text{ ms}$** | Co từ $2.0\text{s} \rightarrow 40\text{ms}$ để mô phỏng tức thì |
+| **Chu kỳ 1 vòng Thở (AUTO)** | **$2.0\text{ giây}$** | **$40\text{ ms}$** | Co từ $2.0\text{ s} \rightarrow 40\text{ ms}$ để mô phỏng tức thì |
 | **Tốc độ Baudrate UART** | **$115,200\text{ bps}$** ($8\text{N}1$) | **$115,200\text{ bps}$** ($8\text{N}1$) | Giữ nguyên chính xác $8.68\mu\text{s}$/bit |
 | **Thời gian Lọc dội phím (Debounce)** | **$20\text{ ms}$** | **$20\text{ ms}$** | Giữ nguyên logic chống dội phím thực |
 
@@ -249,16 +259,16 @@ Do đó, dự án áp dụng kỹ thuật **Truyền đè tham số (Parameter O
    - *Giải pháp*: Mạch Reset Synchronizer 2 tầng dùng tín hiệu `pll_lock` làm điều kiện giải phóng và giữ mức Reset thêm **$20\text{ ms}$** qua bộ đếm `rst_cnt`, bảo đảm toàn bộ hệ thống hoàn toàn ổn định trước khi chạy.
 2. **Triệt Tiêu Hoàn Toàn Rung Nẩy Phím Bấm (Metastability & Bounce Suppression)**:
    - *Vấn đề*: Phím cơ khí khi bấm sinh ra chùm xung nhiễu kéo dài 1-5ms, dễ kích hoạt chuyển đổi trạng thái FSM nhiều lần liên tiếp (double-fire).
-   - *Giải pháp*: Module `button_debounce` tích hợp 2 tầng D-FF đồng bộ hóa + bộ tích phân $20\text{ms}$ ($1,000,000$ nhịp clock) + mạch bắt sườn xuống (Edge Detector), chỉ phát sinh đúng 1 xung clock $20\text{ns}$ duy nhất cho mỗi lần bấm.
+   - *Giải pháp*: Module `button_debounce` tích hợp 2 tầng D-FF đồng bộ hóa + bộ tích phân $20\text{ ms}$ ($1,000,000$ nhịp clock) + mạch bắt sườn xuống (Edge Detector), chỉ phát sinh đúng 1 xung clock $20\text{ ns}$ duy nhất cho mỗi lần bấm.
 3. **Phòng Ngừa Xung Đột Khung Truyền UART (Zero-Collision Proof)**:
    - *Vấn đề*: Nếu người dùng bấm phím liên tục trong lúc UART đang phát dở chuỗi ký tự, khung truyền sẽ bị méo dạng hoặc đè byte.
-   - *Giải pháp*: Chuỗi UART 12 ký tự phát hết $1.042\text{ms}$. Nhờ bộ lọc dội phím $20\text{ms}$, khoảng cách giữa 2 lần nhấn phím luôn lớn hơn thời gian truyền tối thiểu $18.96\text{ms}$. Đồng thời biến `mode_latched` khóa trạng thái trong suốt quá trình phát, bảo vệ khung truyền an toàn tuyệt đối.
+   - *Giải pháp*: Chuỗi UART 12 ký tự phát hết $1.042\text{ ms}$. Nhờ bộ lọc dội phím $20\text{ ms}$, khoảng cách giữa 2 lần nhấn phím luôn lớn hơn thời gian truyền tối thiểu $18.96\text{ ms}$. Đồng thời biến `mode_latched` khóa trạng thái trong suốt quá trình phát, bảo vệ khung truyền an toàn tuyệt đối.
 4. **Đảm Bảo Tần Số Sóng Mang PWM Không Gây Nhấp Nháy Mắt Người (Flicker-Free)**:
    - *Vấn đề*: Nếu chọn tần số PWM quá thấp (< 100Hz), mắt người sẽ cảm thấy đèn LED bị nhấp nháy khó chịu.
    - *Giải pháp*: Thiết lập tần số sóng mang $f_{\text{PWM}} = 1\text{ kHz}$ ($1,000\text{ Hz} \gg 60\text{ Hz}$), tạo ánh sáng mượt mà, êm dịu ở mọi mức Duty Cycle.
 5. **Độ Mịn Tuyến Tính Trong Hiệu Ứng Thở (Smooth Breathing Interpolation)**:
    - *Vấn đề*: Nếu chia quá ít nấc độ sáng, mắt người sẽ thấy LED tăng/giảm độ sáng giật cục từng nấc.
-   - *Giải pháp*: Chia đều thành $2,000$ nấc độ sáng cực mịn, mỗi nấc tăng/giảm $50$ nhịp clock sau mỗi $1\text{ms}$, đem lại cảm giác thở nhẹ nhàng, êm ái tự nhiên.
+   - *Giải pháp*: Chia đều thành $2,000$ nấc độ sáng cực mịn, mỗi nấc tăng/giảm $50$ nhịp clock sau mỗi $1\text{ ms}$, đem lại cảm giác thở nhẹ nhàng, êm ái tự nhiên.
 6. **Bảo Toàn Tương Đương Logic Khi Tăng Tốc Mô Phỏng**:
    - *Vấn đề*: Việc thay đổi mã nguồn gốc để mô phỏng có thể dẫn đến sai lệch khi nạp xuống mạch thật.
    - *Giải pháp*: Giữ nguyên 100% mã RTL gốc, chỉ ghi đè tham số `PWM_FREQ = 50000` trong Testbench (`defparam`), bảo toàn tuyệt đối tính toàn vẹn của mã tổng hợp.
@@ -269,26 +279,27 @@ Do đó, dự án áp dụng kỹ thuật **Truyền đè tham số (Parameter O
 
 ### Chứng minh 1: Tần số Tổng hợp Xung Nhịp PLLVR ($50.0\text{ MHz}$)
 Chip FPGA Gowin GW1NSR-4C nhận dao động thạch anh $f_{\text{IN}} = 27.0\text{ MHz}$. Cấu hình khối PLLVR IP Core:
-$$\text{IDIV\_SEL} = 6 \rightarrow \text{Hệ số chia vào } \text{IDIV} = 7$$
-$$\text{FBDIV\_SEL} = 12 \rightarrow \text{Hệ số nhân hồi tiếp } \text{FBDIV} = 13$$
-$$\text{ODIV\_SEL} = 16 \rightarrow \text{Hệ số chia ra } \text{ODIV} = 1$$
-$$f_{\text{CLKOUT}} = 27.0\text{ MHz} \times \frac{13}{7} \approx \mathbf{50.14\text{ MHz}} \approx \mathbf{50.0\text{ MHz}}$$
+- `IDIV_SEL = 6` $\rightarrow$ Hệ số chia vào `IDIV = 7`
+- `FBDIV_SEL = 12` $\rightarrow$ Hệ số nhân hồi tiếp `FBDIV = 13`
+- `ODIV_SEL = 16` $\rightarrow$ Hệ số chia ra `ODIV = 1`
+
+$$f_{\text{CLKOUT}} = 27.0\text{ MHz} \times \frac{13}{7} \approx 50.14\text{ MHz} \approx 50.0\text{ MHz}$$
 
 ### Chứng minh 2: Sai Số Tốc Độ Baudrate UART ($115,200\text{ bps}$)
-$$\text{BAUD\_DIV} = \left\lfloor \frac{50,000,000}{115,200} \right\rceil = 434\text{ nhịp}$$
+$$N_{\text{baud}} = \left\lfloor \frac{50,000,000}{115,200} \right\rceil = 434\text{ nhịp}$$
 $$\text{Baud}_{\text{actual}} = \frac{50,000,000}{434} \approx 115,207.37\text{ bps}$$
-$$\text{Error} = \frac{|115,207.37 - 115,200|}{115,200} \times 100\% = \mathbf{0.0064\%} \ll 2.0\%$$
+$$\text{Error} = \frac{|115,207.37 - 115,200|}{115,200} \times 100\% = 0.0064\% \ll \pm 2.0\%$$
 
 ### Chứng minh 3: Khẳng Định Tuyệt Đối Không Xung Đột UART (Zero-Collision Proof)
 - Thời gian phát trọn vẹn 1 chuỗi UART dài nhất ($12\text{ bytes} \times 10\text{ bits} = 120\text{ bits}$):
-  $$t_{\text{packet}} = \frac{120}{115,200} \approx \mathbf{1.042\text{ ms}}$$
-- Thời gian lọc dội phím tối thiểu: $t_{\text{debounce}} = \mathbf{20.0\text{ ms}}$.
-- Chênh lệch an toàn: $\Delta t = 20.0\text{ ms} - 1.042\text{ ms} = \mathbf{18.958\text{ ms}} > 0$.
-- **Kết luận**: Gói tin UART luôn hoàn tất trước lần nhấn tiếp theo ít nhất $18.958\text{ms}$, đảm bảo không bao giờ xảy ra tình trạng nghẽn/đè khung truyền.
+  $$t_{\text{packet}} = \frac{120}{115,200} \approx 1.042\text{ ms}$$
+- Thời gian lọc dội phím tối thiểu: $t_{\text{debounce}} = 20.0\text{ ms}$.
+- Chênh lệch an toàn: $\Delta t = 20.0\text{ ms} - 1.042\text{ ms} = 18.958\text{ ms} > 0$.
+- **Kết luận**: Gói tin UART luôn hoàn tất trước lần nhấn tiếp theo ít nhất $18.958\text{ ms}$, đảm bảo không bao giờ xảy ra tình trạng nghẽn/đè khung truyền.
 
 ### Chứng minh 4: Tính Toán Chu Kỳ LED Thở Tuyến Tính ($2.0\text{ Giây}$)
-$$\text{ARR\_MAX} = \frac{50,000,000}{1,000} = 50,000\text{ nhịp}, \quad \text{STEP\_VAL} = \frac{50,000}{1,000} = 50\text{ nhịp/nấc}$$
-$$T_{\text{cycle}} = (1,000\text{ nấc tăng} \times 1.0\text{ ms}) + (1,000\text{ nấc giảm} \times 1.0\text{ ms}) = \mathbf{2.000\text{ giây}}$$
+- `ARR_MAX = 50_000` nhịp, `STEP_VAL = 50` nhịp/nấc.
+$$T_{\text{cycle}} = (1,000\text{ nấc tăng} \times 1.0\text{ ms}) + (1,000\text{ nấc giảm} \times 1.0\text{ ms}) = 2.000\text{ giây}$$
 
 ---
 
@@ -296,11 +307,12 @@ $$T_{\text{cycle}} = (1,000\text{ nấc tăng} \times 1.0\text{ ms}) + (1,000\te
 
 | Khối Chức Năng | Giải Pháp Cơ Bản Thiếu Tối Ưu (Naive Implementation) | Kiến Trúc Kỹ Thuật Vi Mạch Sản Phẩm (Production Architecture) |
 | :--- | :--- | :--- |
-| **Xung Nhịp & Reset** | Dùng mạch chia tần số mềm; không đồng bộ reset gây trạng thái treo lơ lửng. | Dùng IP Core Gowin PLLVR phần cứng + Mạch Reset Synchronizer 2 tầng trễ $20\text{ms}$. |
-| **Lọc Dội Phím** | Thanh ghi dịch 4 bit ngắn (~80ns); vẫn bị rung nẩy cơ học kích đúp FSM. | Bộ tích phân $20\text{ms}$ + 2 tầng D-FF + Mạch bắt sườn xuống xuất xung đúng 1 clock $20\text{ns}$. |
-| **Điều Chế PWM** | Tần số PWM thấp gây nhấp nháy mắt; ít nấc độ sáng gây giật nấc. | Sóng mang $1\text{kHz}$ không nhấp nháy + $2,000$ nấc độ sáng siêu mịn cho chu kỳ thở $2.000\text{s}$. |
-| **Truyền UART** | Gửi từng ký tự đơn `'A'`, không chốt trạng thái; dễ méo chuỗi khi bấm phím. | Gửi đầy đủ chuỗi `"MODE: ... \r\n"` + Chốt `mode_latched` an toàn + Sai số baud chỉ $0.006\%$. |
-| **Mô Phỏng Kiểm Thử** | Chạy mô phỏng thời gian thực $2.0\text{s}$ làm đơ ModelSim; quan sát bằng mắt. | Áp dụng Simulation Acceleration ($50\text{kHz}$) chạy trong $40\text{ms}$ + Testbench tự động 11 kịch bản. |
+| **Xung Nhịp & Reset** | Dùng mạch chia tần số mềm; không đồng bộ reset gây trạng thái treo lơ lửng. | Dùng IP Core Gowin PLLVR phần cứng + Mạch Reset Synchronizer 2 tầng trễ $20\text{ ms}$. |
+| **Lọc Dội Phím** | Thanh ghi dịch 4 bit ngắn (~80ns); vẫn bị rung nẩy cơ học kích đúp FSM. | Bộ tích phân $20\text{ ms}$ + 2 tầng D-FF + Mạch bắt sườn xuống xuất xung đúng 1 clock $20\text{ ns}$. |
+| **Điều Chế PWM** | Tần số PWM thấp gây nhấp nháy mắt; ít nấc độ sáng gây giật nấc. | Sóng mang $1\text{ kHz}$ không nhấp nháy + $2,000$ nấc độ sáng siêu mịn cho chu kỳ thở $2.000\text{ s}$. |
+| **Truyền UART** | Gửi từng ký tự đơn `'A'`, không chốt trạng thái; dễ méo chuỗi khi bấm phím. | Gửi đầy đủ chuỗi `"MODE: ... 
+"` + Chốt `mode_latched` an toàn + Sai số baud chỉ $0.0064\%$. |
+| **Mô Phỏng Kiểm Thử** | Chạy mô phỏng thời gian thực $2.0\text{ s}$ làm đơ ModelSim; quan sát bằng mắt. | Áp dụng Simulation Acceleration ($50\text{ kHz}$) chạy trong $40\text{ ms}$ + Testbench tự động 11 kịch bản. |
 
 ---
 
@@ -309,14 +321,19 @@ $$T_{\text{cycle}} = (1,000\text{ nấc tăng} \times 1.0\text{ ms}) + (1,000\te
 ### Ma Trận 11 Ca Kiểm Thử Tự Động ([`FPGA/sim/tb_top_system_v2.v`](FPGA/sim/tb_top_system_v2.v))
 | Ca Kiểm Thử | Kịch Bản Kích Hoạt | Hành Vi Mong Đợi | Bộ Kiểm Tra Tự Động | Kết Quả |
 | :---: | :--- | :--- | :--- | :---: |
-| **TC-01** | Power-on / Reset | Hệ thống về LOW; phát `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | **PASS (11/11)** |
+| **TC-01** | Power-on / Reset | Hệ thống về LOW; phát `"MODE: LOW
+"` | `uart_check_message(..., 11)` | **PASS (11/11)** |
 | **TC-02** | Đo Duty Mode LOW | Tỷ lệ mức cao đạt đúng 25% | `measure_pwm_duty("LOW", ...)` | **PASS (25.0%)** |
-| **TC-03** | Nhấn Button 1 | Chuyển LOW $\rightarrow$ HIGH; phát `"MODE: HIGH\r\n"` | `uart_check_message(..., 12)` | **PASS (12/12)** |
+| **TC-03** | Nhấn Button 1 | Chuyển LOW $\rightarrow$ HIGH; phát `"MODE: HIGH
+"` | `uart_check_message(..., 12)` | **PASS (12/12)** |
 | **TC-04** | Đo Duty Mode HIGH | Tỷ lệ mức cao đạt đúng 100% | `measure_pwm_duty("HIGH", ...)` | **PASS (100.0%)** |
-| **TC-05** | Nhấn tiếp Button 1 | Chuyển HIGH $\rightarrow$ LOW; phát `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | **PASS (11/11)** |
-| **TC-06** | Nhấn Button 2 | Chuyển sang AUTO; phát `"MODE: AUTO\r\n"` | `uart_check_message(..., 12)` | **PASS (12/12)** |
+| **TC-05** | Nhấn tiếp Button 1 | Chuyển HIGH $\rightarrow$ LOW; phát `"MODE: LOW
+"` | `uart_check_message(..., 11)` | **PASS (11/11)** |
+| **TC-06** | Nhấn Button 2 | Chuyển sang AUTO; phát `"MODE: AUTO
+"` | `uart_check_message(..., 12)` | **PASS (12/12)** |
 | **TC-07** | Quét 40 mẫu Thở AUTO | Duty Cycle tăng/giảm đơn điệu liên tục | `measure_breath_sample(...)` | **PASS (40 mẫu)** |
-| **TC-08** | Nhấn Button 1 trong AUTO | Ép chuyển về LOW; phát `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | **PASS (11/11)** |
+| **TC-08** | Nhấn Button 1 trong AUTO | Ép chuyển về LOW; phát `"MODE: LOW
+"` | `uart_check_message(..., 11)` | **PASS (11/11)** |
 | **TC-09** | Nhiễu rung phím (Bounce) | Chỉ kích hoạt 1 lần duy nhất | `glitchy_press_btn1` | **PASS** |
 | **TC-10** | Xung cực ngắn (< 5ms) | Bị loại bỏ hoàn toàn, không đổi mode | `short_press_btn1` | **PASS** |
 | **TC-11** | Đo Baudrate UART | Chu kỳ bit $8,680.56\text{ ns}$, sai số $\le 0.01\%$ | `uart_check_message` bit timer | **PASS (0.006%)** |
