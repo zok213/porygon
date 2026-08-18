@@ -1,20 +1,23 @@
 # FPGA Verification Suite & Simulation Testing Guide (Da Nang Contest 2026)
 
-> **Navigation / Chuy?n hu?ng Ng�n ng?**:  
-> ???? [Ti?ng Vi?t � K? Ho?ch & B�o C�o Ki?m Th? FPGA](#-k?-ho?ch--b�o-c�o-ki?m-th?-fpga-ti?ng-vi?t)  
-> ???? [English � FPGA Verification & Testing Specification](#-fpga-verification--testing-specification-english)
+[![CI](https://github.com/zok213/porygon/actions/workflows/ci.yml/badge.svg)](https://github.com/zok213/porygon/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+> **Navigation / Chuyển hướng Ngôn ngữ**:  
+> 🇻🇳 [Tiếng Việt — Kế Hoạch & Báo Cáo Kiểm Thử FPGA](#-kế-hoạch--báo-cáo-kiểm-thử-fpga-tiếng-việt)  
+> 🇬🇧 [English — FPGA Verification & Testing Specification](#-fpga-verification--testing-specification-english)
 
 ---
 
-# ???? K? HO?CH & B�O C�O KI?M TH? FPGA (TI?NG VI?T)
+# 🇻🇳 KẾ HOẠCH & BÁO CÁO KIỂM THỬ FPGA (TIẾNG VIỆT)
 
-## 1. T?ng Quan V? Ki?n Tr�c Ki?m Th? (Verification Architecture)
+## 1. Tổng Quan Về Kiến Trúc Kiểm Thử (Verification Architecture)
 
-H? th?ng ki?m th? FPGA �p d?ng chu?n **Self-Checking Testbench** (`sim/tb_top_system_v2.v`), t? d?ng d�nh gi� t�nh d�ng d?n c?a logic RTL qua c�c b? gi�m s�t (Monitors) v� b? x�c th?c (Checkers) t? d?ng, kh�ng ph? thu?c v�o vi?c quan s�t th? c�ng b?ng m?t.
+Hệ thống kiểm thử FPGA áp dụng chuẩn **Self-Checking Testbench** (`sim/tb_top_system_v2.v`), tự động đánh giá tính đúng đắn của logic RTL qua các bộ giám sát (Monitors) và bộ xác thực (Checkers) tự động, không phụ thuộc vào việc quan sát thủ công bằng mắt.
 
 ```mermaid
 flowchart LR
-    subgraph STIMULUS["Kh?i K�ch Th�ch (Stimulus Generator)"]
+    subgraph STIMULUS["Khối Kích Thích (Stimulus Generator)"]
         RST_STIM["Trigger Reset (5ms)"]
         BTN1_STIM["Press BTN1 (30ms)"]
         BTN2_STIM["Press BTN2 (30ms)"]
@@ -22,7 +25,7 @@ flowchart LR
         SHORT_STIM["Short Pulse (<5ms rejection)"]
     end
 
-    subgraph DUT["Thi?t B? C?n Ki?m Th? (DUT: top_system)"]
+    subgraph DUT["Thiết Bị Cần Kiểm Thử (DUT: top_system)"]
         PLL["Gowin PLL (27M->50M)"]
         DB["Debouncer 20ms"]
         FSM["Supervisor FSM"]
@@ -30,7 +33,7 @@ flowchart LR
         UART_CORE["UART TX 115200 (8N1)"]
     end
 
-    subgraph CHECKERS["Kh?i Gi�m S�t & T? �?ng B?t L?i"]
+    subgraph CHECKERS["Khối Giám Sát & Tự Động Bắt Lỗi"]
         UART_DEC["UART Bit-by-Bit Receiver & Baud Rate Error Analyzer"]
         PWM_MTR["PWM Duty Cycle Averaging Meter"]
         BREATH_MTR["Breathing Monotonicity Trend Sampler (40 samples)"]
@@ -42,38 +45,38 @@ flowchart LR
 
 ---
 
-## 2. Ma Tr?n Ca Ki?m Th? T? �?ng (Test Matrix & Automated Assertions)
+## 2. Ma Trận Ca Kiểm Thử Tự Động (Test Matrix & Automated Assertions)
 
-| M� Ca Ki?m Th? | K?ch B?n K�ch Ho?t | H�nh Vi K? Thu?t Mong �?i | B? Ki?m Tra T? �?ng (Checker) | Ti�u Chu?n �?t (Pass Criteria) | K?t Qu? |
+| Mã Ca Kiểm Thử | Kịch Bản Kích Hoạt | Hành Vi Kỹ Thuật Mong Đợi | Bộ Kiểm Tra Tự Động (Checker) | Tiêu Chuẩn Đạt (Pass Criteria) | Kết Quả |
 | :---: | :--- | :--- | :--- | :--- | :---: |
-| **TC-01** | Kh?i d?ng / Hardware Reset (`rst_n_in = 0` $\rightarrow 1$) | H? th?ng v? Mode LOW; t? d?ng ph�t chu?i `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | Nh?n d�ng 11 byte ASCII, m� hex k?t th�c `0x0D 0x0A` | **PASS (11/11 checks)** |
-| **TC-02** | �o Duty Cycle Mode LOW | T? l? t�ch c?c m?c cao chi?m d�ng 25% | `measure_pwm_duty("LOW", ...)` | $\text{Duty} = 25.0\% \pm 0.5\%$ | **PASS** |
-| **TC-03** | Nh?n Button 1 (`btn1_in = 0` trong 30ms) | Chuy?n LOW $\rightarrow$ HIGH; ph�t chu?i `"MODE: HIGH\r\n"` | `uart_check_message(..., 12)` | Nh?n d�ng 12 byte ASCII | **PASS (12/12 checks)** |
-| **TC-04** | �o Duty Cycle Mode HIGH | T? l? t�ch c?c m?c cao chi?m d�ng 100% | `measure_pwm_duty("HIGH", ...)` | $\text{Duty} = 100.0\%$ (S�ng li�n t?c) | **PASS** |
-| **TC-05** | Nh?n ti?p Button 1 | Chuy?n HIGH $\rightarrow$ LOW; ph�t chu?i `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | Nh?n d�ng 11 byte ASCII | **PASS (11/11 checks)** |
-| **TC-06** | Nh?n Button 2 (`btn2_in = 0` trong 30ms) | Chuy?n sang Mode AUTO; ph�t chu?i `"MODE: AUTO\r\n"` | `uart_check_message(..., 12)` | Nh?n d�ng 12 byte ASCII | **PASS (12/12 checks)** |
-| **TC-07** | Qu�t hi?u ?ng Th? (Mode AUTO) | Duty Cycle tang d?n t? 0% l�n 100% r?i gi?m d?n v? 0% | `measure_breath_sample(...)` (40 m?u) | $\ge 5$ m?u tang don di?u v� $\ge 5$ m?u gi?m don di?u | **PASS (40/40 checks)** |
-| **TC-08** | Nh?n Button 1 khi dang ? AUTO | �p chuy?n t? AUTO $\rightarrow$ Mode LOW; ph�t `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | Nh?n d�ng 11 byte ASCII | **PASS (11/11 checks)** |
-| **TC-09** | Nhi?u rung ph�m (Contact Bounce) | Bom ch�m xung nhi?u d?o li�n t?c 1-2ms tru?c khi gi? 25ms | `glitchy_press_btn1` + `check_no_uart_within` | Ch? ghi nh?n d�ng 1 l?n chuy?n tr?ng th�i, kh�ng b? double-fire | **PASS** |
-| **TC-10** | Nh?n ph�m c?c ng?n (< 5ms) | Ph�m nh?n du?i ngu?ng 20ms debounce | `short_press_btn1` + `check_no_uart_within` | B? l?c d?i ph�m lo?i b? ho�n to�n, kh�ng c� UART ph�t ra | **PASS** |
-| **TC-11** | �? ch�nh x�c Baudrate UART | �o chu k? 1 bit UART th?c t? | `uart_check_message` bit timer | Bit period $= 8,680.56\text{ ns}$, sai s? $\le 0.01\%$ | **PASS (0.006%)** |
+| **TC-01** | Khởi động / Hardware Reset (`rst_n_in = 0` $\rightarrow 1$) | Hệ thống về Mode LOW; tự động phát chuỗi `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | Nhận đúng 11 byte ASCII, mã hex kết thúc `0x0D 0x0A` | **PASS (11/11 checks)** |
+| **TC-02** | Đo Duty Cycle Mode LOW | Tỷ lệ tích cực mức cao chiếm đúng 25% | `measure_pwm_duty("LOW", ...)` | $\text{Duty} = 25.0\% \pm 0.5\%$ | **PASS** |
+| **TC-03** | Nhấn Button 1 (`btn1_in = 0` trong 30ms) | Chuyển LOW $\rightarrow$ HIGH; phát chuỗi `"MODE: HIGH\r\n"` | `uart_check_message(..., 12)` | Nhận đúng 12 byte ASCII | **PASS (12/12 checks)** |
+| **TC-04** | Đo Duty Cycle Mode HIGH | Tỷ lệ tích cực mức cao chiếm đúng 100% | `measure_pwm_duty("HIGH", ...)` | $\text{Duty} = 100.0\%$ (Sáng liên tục) | **PASS** |
+| **TC-05** | Nhấn tiếp Button 1 | Chuyển HIGH $\rightarrow$ LOW; phát chuỗi `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | Nhận đúng 11 byte ASCII | **PASS (11/11 checks)** |
+| **TC-06** | Nhấn Button 2 (`btn2_in = 0` trong 30ms) | Chuyển sang Mode AUTO; phát chuỗi `"MODE: AUTO\r\n"` | `uart_check_message(..., 12)` | Nhận đúng 12 byte ASCII | **PASS (12/12 checks)** |
+| **TC-07** | Quét hiệu ứng Thở (Mode AUTO) | Duty Cycle tăng dần từ 0% lên 100% rồi giảm dần về 0% | `measure_breath_sample(...)` (40 mẫu) | $\ge 5$ mẫu tăng đơn điệu và $\ge 5$ mẫu giảm đơn điệu | **PASS (40/40 checks)** |
+| **TC-08** | Nhấn Button 1 khi đang ở AUTO | Ép chuyển từ AUTO $\rightarrow$ Mode LOW; phát `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | Nhận đúng 11 byte ASCII | **PASS (11/11 checks)** |
+| **TC-09** | Nhiễu rung phím (Contact Bounce) | Bơm chùm xung nhiễu đảo liên tục 1-2ms trước khi giữ 25ms | `glitchy_press_btn1` + `check_no_uart_within` | Chỉ ghi nhận đúng 1 lần chuyển trạng thái, không bị double-fire | **PASS** |
+| **TC-10** | Nhấn phím cực ngắn (< 5ms) | Phím nhấn dưới ngưỡng 20ms debounce | `short_press_btn1` + `check_no_uart_within` | Bộ lọc dội phím loại bỏ hoàn toàn, không có UART phát ra | **PASS** |
+| **TC-11** | Độ chính xác Baudrate UART | Đo chu kỳ 1 bit UART thực tế | `uart_check_message` bit timer | Bit period $= 8,680.56\text{ ns}$, sai số $\le 0.01\%$ | **PASS (0.006%)** |
 
 ---
 
-## 3. Hu?ng D?n Ch?y M� Ph?ng ModelSim / QuestaSim
+## 3. Hướng Dẫn Chạy Mô Phỏng ModelSim / QuestaSim
 
-### 3.1. C�c bu?c n?p t?p k?ch b?n m� ph?ng
-1. Kh?i d?ng ph?n m?m **ModelSim** (ho?c QuestaSim).
-2. T?o thu m?c l�m vi?c m?i v� d?i du?ng d?n l�m vi?c v? thu m?c `FPGA/`:
+### 3.1. Các bước nạp tệp kịch bản mô phỏng
+1. Khởi động phần mềm **ModelSim** (hoặc QuestaSim).
+2. Tạo thư mục làm việc mới và đổi đường dẫn làm việc về thư mục `FPGA/`:
    ```tcl
    cd d:/FPGA&MCU/FPGA
    ```
-3. T?o thu vi?n l�m vi?c:
+3. Tạo thư viện làm việc:
    ```tcl
    vlib work
    vmap work work
    ```
-4. Bi�n d?ch to�n b? m� ngu?n RTL v� Testbench:
+4. Biên dịch toàn bộ mã nguồn RTL và Testbench:
    ```tcl
    vlog src/button_debounce.v
    vlog src/pwm_led_controller.v
@@ -82,44 +85,44 @@ flowchart LR
    vlog src/top_system.v
    vlog sim/tb_top_system_v2.v
    ```
-5. Kh?i ch?y m� ph?ng:
+5. Khởi chạy mô phỏng:
    ```tcl
    vsim -voptargs=+acc work.tb_top_system_v2
    ```
-6. T?i c?u h�nh d?ng s�ng v� thu?c do m�u t? d?ng:
+6. Tải cấu hình dạng sóng và thước đo màu tự động:
    ```tcl
    do sim/wavefinal.do
    ```
-7. Ch?y m� ph?ng to�n ph?n:
+7. Chạy mô phỏng toàn phần:
    ```tcl
    run -all
    ```
 
-### 3.2. �?c Thu?c �o D?ng S�ng (Waveform Markers)
+### 3.2. Đọc Thước Đo Dạng Sóng (Waveform Markers)
 
-T?p [`sim/wavefinal.do`](sim/wavefinal.do) d� du?c c?u h�nh s?n c�c nh�m m�u tr?c quan:
-- **T�n hi?u N�t nh?n (`btn1_in`, `btn2_in`)**: Hi?n th? m�u tr?ng.
-- **Xung l?c ph�m (`btn1_pulse`, `btn2_pulse`)**: Hi?n th? m�u H?ng / Xanh Olive (ch? nh�y 1 xung 20ns duy nh?t).
-- **Xung PWM LED (`led_out`)**: Hi?n th? m�u �? (�o chu k? b?ng Cursor $\approx 20\mu\text{s}$ ? ch? d? m� ph?ng tang t?c).
-- **Ng� ra UART (`uart_tx`)**: Hi?n th? m�u V�ng kim (�o d? r?ng 1 bit $\approx 8.68\mu\text{s}$).
-- **Tr?ng th�i FSM (`current_mode`)**: Hi?n th? gi� tr? nguy�n kh�ng d?u (`0`: LOW, `1`: HIGH, `2`: AUTO).
+Tệp [`sim/wavefinal.do`](sim/wavefinal.do) đã được cấu hình sẵn các nhóm màu trực quan:
+- **Tín hiệu Nút nhấn (`btn1_in`, `btn2_in`)**: Hiển thị màu trắng.
+- **Xung lọc phím (`btn1_pulse`, `btn2_pulse`)**: Hiển thị màu Hồng / Xanh Olive (chỉ nháy 1 xung 20ns duy nhất).
+- **Xung PWM LED (`led_out`)**: Hiển thị màu Đỏ (Đo chu kỳ bằng Cursor $\approx 20\mu\text{s}$ ở chế độ mô phỏng tăng tốc).
+- **Ngõ ra UART (`uart_tx`)**: Hiển thị màu Vàng kim (Đo độ rộng 1 bit $\approx 8.68\mu\text{s}$).
+- **Trạng thái FSM (`current_mode`)**: Hiển thị giá trị nguyên không dấu (`0`: LOW, `1`: HIGH, `2`: AUTO).
 
 ---
 
-## 4. Checklist Ki?m Tra M?ch Th?t Ph?n C?ng (Kiwi Nano 4K Board)
+## 4. Checklist Kiểm Tra Mạch Thật Phần Cứng (Kiwi Nano 4K Board)
 
-| Bu?c | H�nh �?ng Tr�n Bo | Hi?n Tu?ng Quan S�t Tr�n LED D2 | D? Li?u Thu Tr�n C?ng Serial (115200 8N1) | ��nh Gi� |
+| Bước | Hành Động Trên Bo | Hiện Tượng Quan Sát Trên LED D2 | Dữ Liệu Thu Trên Cổng Serial (115200 8N1) | Đánh Giá |
 | :---: | :--- | :--- | :--- | :---: |
-| 1 | C?m ngu?n / B?m n�t Reset | LED2 s�ng m? d?u (Duty 25%, 1kHz) | Xu?t hi?n d�ng: `MODE: LOW` k�m xu?ng d�ng | [ ] �?t |
-| 2 | B?m N�t 1 (Pin 14) l?n 1 | LED2 s�ng r?c c?c d?i (Duty 100%) | Xu?t hi?n d�ng: `MODE: HIGH` | [ ] �?t |
-| 3 | B?m N�t 1 (Pin 14) l?n 2 | LED2 gi?m d? s�ng v? 25% | Xu?t hi?n d�ng: `MODE: LOW` | [ ] �?t |
-| 4 | B?m N�t 2 (Pin 15) | LED2 th? s�ng d?n $\rightarrow$ t?i d?n trong d�ng 2.0s | Xu?t hi?n d�ng: `MODE: AUTO` | [ ] �?t |
-| 5 | B?m N�t 1 khi dang th? | LED2 l?p t?c ng?ng th?, gi? s�ng ? 25% | Xu?t hi?n d�ng: `MODE: LOW` | [ ] �?t |
-| 6 | Nh?n gi? ph�m l�u | Kh�ng b? g?i l?p l?i nhi?u l?n | Ch? g?i d�ng 1 chu?i k� t? duy nh?t | [ ] �?t |
+| 1 | Cắm nguồn / Bấm nút Reset | LED2 sáng mờ đều (Duty 25%, 1kHz) | Xuất hiện dòng: `MODE: LOW` kèm xuống dòng | [ ] Đạt |
+| 2 | Bấm Nút 1 (Pin 14) lần 1 | LED2 sáng rực cực đại (Duty 100%) | Xuất hiện dòng: `MODE: HIGH` | [ ] Đạt |
+| 3 | Bấm Nút 1 (Pin 14) lần 2 | LED2 giảm độ sáng về 25% | Xuất hiện dòng: `MODE: LOW` | [ ] Đạt |
+| 4 | Bấm Nút 2 (Pin 15) | LED2 thở sáng dần $\rightarrow$ tối dần trong đúng 2.0s | Xuất hiện dòng: `MODE: AUTO` | [ ] Đạt |
+| 5 | Bấm Nút 1 khi đang thở | LED2 lập tức ngừng thở, giữ sáng ở 25% | Xuất hiện dòng: `MODE: LOW` | [ ] Đạt |
+| 6 | Nhấn giữ phím lâu | Không bị gửi lặp lại nhiều lần | Chỉ gửi đúng 1 chuỗi ký tự duy nhất | [ ] Đạt |
 
 ---
 
-# ???? FPGA VERIFICATION & TESTING SPECIFICATION (ENGLISH)
+# 🇬🇧 FPGA VERIFICATION & TESTING SPECIFICATION (ENGLISH)
 
 ## Summary of Test Results
 The automated self-checking testbench (`sim/tb_top_system_v2.v`) executes 11 distinct test cases verifying:

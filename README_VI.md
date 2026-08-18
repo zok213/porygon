@@ -1,39 +1,23 @@
-# Porygon: Khung Thi?t K? H? Th?ng FPGA & MCU (�� N?ng Contest 2026)
-
-[![CI](https://github.com/zok213/porygon/actions/workflows/ci.yml/badge.svg)](https://github.com/zok213/porygon/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-> **�i?u Hu?ng Ng�n Ng?**: ???? Ti?ng Vi?t | ???? [English Specification](README_EN.md)
+| :--- | :--- | :--- |
+| **MCU Track (ARM Cortex-M0 SN32F407)** | 🟢 [`MCU_main`](https://github.com/zok213/porygon/tree/MCU_main) | 🛠️ [`MCU_dev`](https://github.com/zok213/porygon/tree/MCU_dev) | [`MCU_Contest_2026/`](MCU_Contest_2026/) |
+| **FPGA Track (Gowin GW1NSR-4C Verilog RTL)**| 🟢 [`FPGA_main`](https://github.com/zok213/porygon/tree/FPGA_main) | 🛠️ [`FPGA_dev`](https://github.com/zok213/porygon/tree/FPGA_dev) | [`FPGA/`](FPGA/) |
+| **Bản Phát Hành Chính Thức** | 🏆 [`release`](https://github.com/zok213/porygon/tree/release) | — | Toàn bộ Repository |
 
 ---
 
-# ???? B?N THUY?T MINH �?NH HU?NG & T?NG QUAN H? TH?NG MASTER
+## 1. Tóm Tắt Hệ Thống & Kiến Trúc 2 Khối Cuộc Thi
 
-## ?? B?NG �I?U HU?NG C�C NH�NH D? �N TR�N GITHUB
-
-H? th?ng m� ngu?n du?c ph�n t�ch d?c l?p theo m� h�nh **Git Flow �a Nh�nh (Multi-Track Branching Strategy)**:
-
-| Ph�n Kh?i K? Thu?t | Nh�nh S?n Ph?m Baseline (Production) | Nh�nh Ph�t Tri?n (Active Dev) | Thu M?c M� Ngu?n |
-| :--- | :--- | :--- | :--- |
-| **MCU Track (ARM Cortex-M0 SN32F407)** | ?? [`MCU_main`](https://github.com/zok213/porygon/tree/MCU_main) | ??? [`MCU_dev`](https://github.com/zok213/porygon/tree/MCU_dev) | [`MCU_Contest_2026/`](MCU_Contest_2026/) |
-| **FPGA Track (Gowin GW1NSR-4C Verilog RTL)**| ?? [`FPGA_main`](https://github.com/zok213/porygon/tree/FPGA_main) | ??? [`FPGA_dev`](https://github.com/zok213/porygon/tree/FPGA_dev) | [`FPGA/`](FPGA/) |
-| **B?n Ph�t H�nh Ch�nh Th?c** | ?? [`release`](https://github.com/zok213/porygon/tree/release) | � | To�n b? Repository |
-
----
-
-## 1. T�m T?t H? Th?ng & Ki?n Tr�c 2 Kh?i Cu?c Thi
-
-T�i li?u n�y tr�nh b�y gi?i ph�p k? thu?t t?ng th? cho **H?i thi Thi?t k? H? th?ng Nh�ng & Vi di?u khi?n �� N?ng 2026**, bao g?m hai kh?i ph?n c?ng chuy�n bi?t:
+Dự án tích hợp hai khối phần cứng chuyên biệt cho **Hội thi Thiết kế Hệ thống Nhúng & Vi điều khiển Đà Nẵng 2026**:
 
 ```mermaid
 flowchart TB
-    subgraph SYSTEM["H? TH?NG T?NG TH? PORYGON (FPGA & MCU)"]
-        subgraph MCU_SYS["Kh?i Vi �i?u Khi?n: ARM Cortex-M0 SN32F407_EVK"]
-            MCU_CORE["L�i SN32F407 @ 48MHz<br>(SysTick 1ms RTC)"]
-            MCU_I2C["I2C0 Driver Ng?t Chu?n H�ng<br>(AT24C02 EEPROM)"]
-            MCU_DISP["LED 7 �o?n 4 S? (HH.MM)<br>3 Pha Ch?ng B�ng Ma"]
-            MCU_KEY["Qu�t Ph�m Ma Tr?n 4x4<br>(SW3, SW6, SW10, SW16)"]
-            MCU_BUZZ["C�i Piezo & LED D6"]
+    subgraph SYSTEM["HỆ THỐNG TỔNG THỂ PORYGON (FPGA & MCU)"]
+        subgraph MCU_SYS["Khối Vi Điều Khiển: ARM Cortex-M0 SN32F407_EVK"]
+            MCU_CORE["Lõi SN32F407 @ 48MHz<br>(SysTick 1ms RTC)"]
+            MCU_I2C["I2C0 Driver Ngắt Chuẩn Hãng<br>(AT24C02 EEPROM)"]
+            MCU_DISP["LED 7 Đoạn 4 Số (HH.MM)<br>3 Pha Chống Bóng Ma"]
+            MCU_KEY["Quét Phím Ma Trận 4x4<br>(SW3, SW6, SW10, SW16)"]
+            MCU_BUZZ["Còi Piezo & LED D6"]
             
             MCU_CORE <--> MCU_I2C
             MCU_CORE --> MCU_DISP
@@ -41,13 +25,13 @@ flowchart TB
             MCU_CORE --> MCU_BUZZ
         end
 
-        subgraph FPGA_SYS["Kh?i Vi M?ch Kh? Tr�nh: Gowin GW1NSR-4C (Kiwi Nano 4K)"]
+        subgraph FPGA_SYS["Khối Vi Mạch Khả Trình: Gowin GW1NSR-4C (Kiwi Nano 4K)"]
             FPGA_PLL["Gowin PLLVR IP Core<br>(27MHz -> 50MHz)"]
-            FPGA_RST["�?ng B? Reset & Kh?i T?o 20ms"]
-            FPGA_DB["L?c D?i Ph�m 20ms<br>(Xu?t Xung 1-Clock)"]
-            FPGA_FSM["FSM Trung T�m Qu?n L� Ch? �?<br>(LOW ? HIGH, AUTO ? LOW)"]
-            FPGA_PWM["�i?u Ch? PWM 1kHz<br>(LOW 25%, HIGH 100%, Th? 2.0s)"]
-            FPGA_UART["Truy?n Chu?i UART TX 115200<br>(8N1, Ch?t Mode An To�n)"]
+            FPGA_RST["Đồng Bộ Reset & Khởi Tạo 20ms"]
+            FPGA_DB["Lọc Dội Phím 20ms<br>(Xuất Xung 1-Clock)"]
+            FPGA_FSM["FSM Trung Tâm Quản Lý Chế Độ<br>(LOW ↔ HIGH, AUTO → LOW)"]
+            FPGA_PWM["Điều Chế PWM 1kHz<br>(LOW 25%, HIGH 100%, Thở 2.0s)"]
+            FPGA_UART["Truyền Chuỗi UART TX 115200<br>(8N1, Chốt Mode An Toàn)"]
             
             FPGA_PLL --> FPGA_RST --> FPGA_FSM
             FPGA_PLL --> FPGA_DB --> FPGA_FSM
@@ -57,74 +41,76 @@ flowchart TB
     end
 ```
 
-### 1.1 Kh?i Vi di?u khi?n (MCU Track - SN32F407_EVK)
-- **Ki?n tr�c M� ngu?n**: C99 chu?n nh�ng ph�ng th? ch?y tr�n chip **SN32F407_EVK** (l�i ARM Cortex-M0).
-- **T�nh nang**: �?ng h? s? 24 gi?, qu�t da k�nh LED 7 do?n ch?ng b�ng ma, luu tr? b�o th?c v�o EEPROM AT24C02 qua I2C0 ng?t ph?n c?ng, thu?t to�n ACK Polling, t? ph?c h?i l?i HardFault.
-- **Thu m?c**: [`MCU_Contest_2026/`](MCU_Contest_2026/) | **T�i li?u**: [`MCU_Contest_2026/README.md`](MCU_Contest_2026/README.md).
+### 1.1 Khối Vi điều khiển (MCU Track — SN32F407_EVK)
+- **Kiến trúc Mã nguồn**: C99 chuẩn nhúng phòng thủ (Defensive Embedded C) chạy trên chip **SN32F407_EVK** (lõi ARM Cortex-M0).
+- **Tính năng**: Đồng hồ số 24 giờ, quét đa kênh LED 7 đoạn 3 pha chống bóng ma, lưu trữ báo thức vào EEPROM AT24C02 qua I2C0 ngắt phần cứng, thuật toán ACK Polling chống nghẽn bus, và tự phục hồi lỗi HardFault.
+- **Thư mục**: [`MCU_Contest_2026/`](MCU_Contest_2026/) | **Tài liệu**: [`MCU_Contest_2026/README.md`](MCU_Contest_2026/README.md).
 
-### 1.2 Kh?i Vi m?ch Kh? tr�nh (FPGA Track - Gowin GW1NSR-4C)
-- **Ki?n tr�c M� ngu?n**: Verilog RTL chu?n h�a m� ph?ng v� t?ng h?p tr�n FPGA **GW1NSR-LV4CQN48PC7/I6 (Kiwi Nano 4K)**.
-- **T�nh nang**: PLLVR t?ng h?p $50.0\text{MHz}$, b? l?c d?i ph�m ph?n c?ng $20\text{ms}$ xu?t xung 1-clock, PWM LED 3 ch? d? (LOW 25%, HIGH 100%, AUTO Th? tuy?n t�nh ch�nh x�c $2.000\text{s}$), truy?n telemetry chu?i UART TX $115,200\text{ bps}$ (sai s? $0.006\%$).
-- **Thu m?c**: [`FPGA/`](FPGA/) | **T�i li?u**: [`FPGA/README.md`](FPGA/README.md) & [`FPGA/TESTING.md`](FPGA/TESTING.md).
+### 1.2 Khối Vi mạch Khả trình (FPGA Track — Gowin GW1NSR-4C)
+- **Kiến trúc Mã nguồn**: Verilog RTL chuẩn công nghiệp tổng hợp trên FPGA **GW1NSR-LV4CQN48PC7/I6 (Kiwi Nano 4K)**.
+- **Tính năng**: PLLVR tổng hợp $50.0\text{ MHz}$, bộ lọc dội phím phần cứng $20\text{ ms}$ xuất xung 1-clock, PWM LED 3 chế độ (LOW 25%, HIGH 100%, AUTO Thở tuyến tính chính xác $2.000\text{ s}$ gồm 2,000 nấc độ sáng), truyền telemetry chuỗi UART TX $115,200\text{ bps}$ (sai số $0.0064\% \ll \pm 2.0\%$), cơ chế chốt mode chống méo dạng khung truyền, và testbench tự động kiểm tra 11 kịch bản (11/11 Checks PASS).
+- **Thư mục**: [`FPGA/`](FPGA/) | **Tài liệu**: [`FPGA/README.md`](FPGA/README.md) & [`FPGA/TESTING.md`](FPGA/TESTING.md).
 
 ---
 
-## 2. B?ng Ti�u Ch� ��nh Gi� Cu?c Thi (Scoring Rubric)
+## 2. Bảng Tiêu Chí Đánh Giá Cuộc Thi (Scoring Rubric)
 
-| Th�nh ph?n ��nh gi� | Tr?ng s? | Tri?n Khai Th?c T? Trong M� Ngu?n |
+| Thành phần Đánh giá | Trọng số | Triển Khai Thực Tế Trong Mã Nguồn |
 | :--- | :---: | :--- |
-| **Ch?c nang �?ng h? S? & RTL Core** | **35%** | **MCU**: Ng?t SysTick $1\text{ms}$, qu�t 7 do?n $HH.MM$.<br>**FPGA**: PLL $50\text{MHz}$, FSM di?u khi?n trung t�m, Debounce 1-clock. |
-| **B�o th?c, EEPROM & UART Telemetry**| **15%** | **MCU**: Driver I2C0 ng?t ph?n c?ng d?c/ghi AT24C02.<br>**FPGA**: UART TX $115,200\text{ bps}$ ph�t chu?i `"MODE: ... \r\n"`. |
-| **T�nh nang Thu?ng (Bonus Features)** | **10%** | **MCU**: T? d?ng h?y ch?nh sau 30s kh�ng thao t�c.<br>**FPGA**: Hi?u ?ng LED th? $2.0\text{s}$ m?n m�ng (2,000 n?c d? s�ng). |
-| **Thuy?t minh & Demo Video** | **20%** | K?ch b?n ki?m th? tr?c quan tr�n bo th?t SN32F407_EVK v� Kiwi Nano 4K. |
-| **Ki?n tr�c M� ngu?n & T�i li?u** | **10%** | Chu?n C99 ph�ng th? & Verilog chu?n c�ng nghi?p, 0 l?i c?nh b�o (0 Errors, 0 Warnings). |
-| **V�ng Ph?ng v?n K? thu?t Q&A** | **10%** | Ph�n t�ch c?p thanh ghi AHB/APB MCU, ch?ng minh to�n h?c PLL & Baudrate UART. |
+| **Chức năng Đồng hồ Số & RTL Core** | **35%** | **MCU**: Ngắt SysTick $1\text{ms}$, quét 7 đoạn $HH.MM$.<br>**FPGA**: PLL $50\text{MHz}$, FSM điều khiển trung tâm, Debounce 1-clock. |
+| **Báo thức, EEPROM & UART Telemetry**| **15%** | **MCU**: Driver I2C0 ngắt phần cứng đọc/ghi AT24C02.<br>**FPGA**: UART TX $115,200\text{ bps}$ phát chuỗi `"MODE: ... \r\n"`. |
+| **Tính năng Thưởng (Bonus Features)** | **10%** | **MCU**: Tự động hủy chỉnh sau 30s không thao tác.<br>**FPGA**: Hiệu ứng LED thở $2.0\text{s}$ mịn màng (2,000 nấc độ sáng). |
+| **Thuyết minh & Demo Video** | **20%** | Kịch bản kiểm thử trực quan trên bo thật SN32F407_EVK và Kiwi Nano 4K. |
+| **Kiến trúc Mã nguồn & Tài liệu** | **10%** | Chuẩn C99 phòng thủ & Verilog chuẩn công nghiệp, 0 lỗi cảnh báo (0 Errors, 0 Warnings). |
+| **Vòng Phỏng vấn Kỹ thuật Q&A** | **10%** | Phân tích cấp thanh ghi AHB/APB MCU, chứng minh toán học PLL & Baudrate UART. |
 
 ---
 
-## 3. B?n �? C?u Tr�c Thu M?c H? Th?ng Master
+## 3. Bản Đồ Cấu Trúc Thư Mục Hệ Thống Master
 
 ```
 porygon/
-+-- .github/                                              # Quy tr�nh CI/CD & M?u t�i li?u GitHub
-+-- .gitignore                                            # Quy t?c lo?i b? t?p r�c Keil MDK & Gowin EDA
-+-- CODE_OF_CONDUCT.md                                    # Quy t?c ?ng x? d? �n
-+-- CONTRIBUTING.md                                       # Quy d?nh qu?n l� nh�nh Git Flow
-+-- LICENSE                                               # Gi?y ph�p MIT
-+-- README.md                                             # Master B?n Thuy?t minh �?nh hu?ng (VI & EN)
-+-- README_VI.md                                          # B?n Thuy?t minh Ti?ng Vi?t Master
-+-- README_EN.md                                          # Master Routing & System Specification (English)
-+-- SECURITY.md                                           # Ch�nh s�ch b?o m?t & b?o v? b? nh?
-+-- SETUP.md                                              # Hu?ng d?n c�i d?t toolchain Keil & Gowin
-+-- �? THI MCU 2026.pdf                                   # �? thi ch�nh th?c Kh?i Vi di?u khi?n
-+-- �? THI FGPA 2026.docx.pdf                             # �? thi ch�nh th?c Kh?i FPGA
-+-- Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v (1).pdf # T�i li?u l?p tr�nh Gowin FPGA
-+-- FPGA/                                                 # SUB-REPOSITORY KH?I FPGA (GW1NSR-4C)
-�   +-- .gitignore                                        # Lo?i b? t?p r�c impl/, work/, *.wlf
-�   +-- README.md                                         # B�o c�o k? thu?t chi ti?t kh?i FPGA (Song ng?)
-�   +-- TESTING.md                                        # Ma tr?n ki?m th? t? d?ng & Hu?ng d?n ModelSim
-�   +-- README_SIMULATION_SCALING.md                      # Thuy?t minh t? l? th?i gian m� ph?ng tang t?c
-�   +-- pwm11.gprj                                        # T?p d? �n Gowin EDA (Kiwi Nano 4K)
-�   +-- constr/pwm11.cst                                  # R�ng bu?c ch�n v?t l� (Bank 1: 3.3V, Bank 3: 1.8V)
-�   +-- src/                                              # M� ngu?n RTL t?ng h?p du?c
-�   �   +-- top_system.v                                  # Module c?p cao nh?t, �?ng b? Reset & FSM
-�   �   +-- button_debounce.v                             # L?c d?i ph�m 20ms xu?t xung 1-clock
-�   �   +-- pwm_led_controller.v                          # �i?u ch? PWM 1kHz (LOW, HIGH, Th? 2.0s)
-�   �   +-- uart_tx_string.v                              # Truy?n chu?i UART 115200 8N1 ch?t mode
-�   �   +-- gowin_pllvr.v                                 # Wrapper IP Core PLL 27MHz -> 50MHz
-�   �   +-- ip/gowin_pllvr/                               # C?u h�nh IP Gowin PLLVR
-�   +-- sim/                                              # K?ch b?n ki?m th? m� ph?ng
-�   �   +-- tb_top_system_v2.v                            # Testbench t? d?ng ki?m tra 11 k?ch b?n
-�   �   +-- tb_uart_tx.v                                  # Testbench do th?i gian kh?i UART
-�   �   +-- wavefinal.do                                  # K?ch b?n d?ng s�ng & Thu?c do ModelSim
-�   +-- docs/                                             # T�i li?u d? b�i & Thuy?t minh k? thu?t
-+-- MCU_Contest_2026/                                     # SUB-REPOSITORY KH?I MCU (SN32F407)
-    +-- .gitignore                                        # Lo?i b? t?p build Keil MDK
-    +-- README.md                                         # B�o c�o k? thu?t chi ti?t kh?i MCU
-    +-- TESTING.md                                        # Ma tr?n ki?m th? & K?ch b?n demo MCU
-    +-- main_clock_skeleton.c                             # Firmware C di?u khi?n FSM & SysTick 1ms
-    +-- I2C0.c / I2C.h                                    # Driver I2C0 ng?t ph?n c?ng chu?n SONiX
-    +-- Clock_Simulation.uvprojx                          # D? �n Keil MDK uVision
-    +-- Docs/                                             # Luu tr? d? thi MCU
-    +-- RTE/                                              # Thu vi?n CMSIS & Startup SN32F400
+├── .github/                                              # Quy trình CI/CD & Mẫu tài liệu GitHub
+├── .gitignore                                            # Quy tắc loại bỏ tệp rác Keil MDK & Gowin EDA
+├── CODE_OF_CONDUCT.md                                    # Quy tắc ứng xử dự án
+├── CONTRIBUTING.md                                       # Quy định quản lý nhánh Git Flow
+├── LICENSE                                               # Giấy phép MIT
+├── README.md                                             # Master Bản Thuyết minh Định hướng (VI & EN)
+├── README_VI.md                                          # Bản Thuyết minh Tiếng Việt Master
+├── README_EN.md                                          # Master Routing & System Specification (English)
+├── SECURITY.md                                           # Chính sách bảo mật & bảo vệ bộ nhớ
+├── SETUP.md                                              # Hướng dẫn cài đặt toolchain Keil & Gowin
+├── ĐỀ THI MCU 2026.pdf                                   # Đề thi chính thức Khối Vi điều khiển
+├── ĐỀ THI FGPA 2026.docx.pdf                             # Đề thi chính thức Khối FPGA
+├── Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v (1).pdf # Tài liệu lập trình Gowin FPGA
+├── FPGA/                                                 # SUB-REPOSITORY KHỐI FPGA (GW1NSR-4C)
+│   ├── .gitignore                                        # Loại bỏ tệp rác impl/, work/, *.wlf
+│   ├── README.md                                         # Báo cáo kỹ thuật chi tiết khối FPGA (Song ngữ)
+│   ├── TESTING.md                                        # Ma trận kiểm thử tự động & Hướng dẫn ModelSim
+│   ├── README_SIMULATION_SCALING.md                      # Thuyết minh tỷ lệ thời gian mô phỏng tăng tốc
+│   ├── pwm11.gprj                                        # Tệp dự án Gowin EDA (Kiwi Nano 4K)
+│   ├── constr/pwm11.cst                                  # Ràng buộc chân vật lý (Bank 1: 3.3V, Bank 3: 1.8V)
+│   ├── src/                                              # Mã nguồn RTL tổng hợp được
+│   │   ├── top_system.v                                  # Module cấp cao nhất, Đồng bộ Reset & FSM
+│   │   ├── button_debounce.v                             # Lọc dội phím 20ms xuất xung 1-clock
+│   │   ├── pwm_led_controller.v                          # Điều chế PWM 1kHz (LOW, HIGH, Thở 2.0s)
+│   │   ├── uart_tx_string.v                              # Truyền chuỗi UART 115200 8N1 chốt mode
+│   │   ├── gowin_pllvr.v                                 # Wrapper IP Core PLL 27MHz -> 50MHz
+│   │   └── ip/gowin_pllvr/                               # Cấu hình IP Gowin PLLVR
+│   ├── sim/                                              # Kịch bản kiểm thử mô phỏng
+│   │   ├── tb_top_system_v2.v                            # Testbench tự động kiểm tra 11 kịch bản
+│   │   ├── tb_uart_tx.v                                  # Testbench đo thời gian khối UART
+│   │   └── wavefinal.do                                  # Kịch bản dạng sóng & Thước đo ModelSim
+│   └── docs/                                             # Tài liệu đề bài & Thuyết minh kỹ thuật
+└── MCU_Contest_2026/                                     # SUB-REPOSITORY KHỐI MCU (SN32F407)
+    ├── .gitignore                                        # Loại bỏ tệp build Keil MDK
+    ├── README.md                                         # Báo cáo kỹ thuật chi tiết khối MCU
+    ├── TESTING.md                                        # Ma trận kiểm thử & Kịch bản demo MCU
+    ├── main_clock_skeleton.c                             # Firmware C điều khiển FSM & SysTick 1ms
+    ├── I2C0.c / I2C.h                                    # Driver I2C0 ngắt phần cứng chuẩn SONiX
+    ├── Clock_Simulation.uvprojx                          # Dự án Keil MDK uVision
+    ├── Docs/                                             # Lưu trữ đề thi MCU
+    └── RTE/                                              # Thư viện CMSIS & Startup SN32F400
 ```
+
+---

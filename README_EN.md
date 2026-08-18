@@ -1,23 +1,16 @@
 # Porygon: FPGA and MCU System Design Framework (Da Nang Contest 2026)
 
-[![CI](https://github.com/zok213/porygon/actions/workflows/ci.yml/badge.svg)](https://github.com/zok213/porygon/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+# üá¨üáß MASTER ROUTING & SYSTEM SPECIFICATION (ENGLISH)
 
-> **Language Navigation**: [???? Ti?ng Vi?t](README_VI.md) | ???? English Specification
-
----
-
-# ???? MASTER ROUTING & SYSTEM SPECIFICATION (ENGLISH)
-
-## ?? OFFICIAL GITHUB REPOSITORY BRANCH NAVIGATION MATRIX
+## üìç OFFICIAL GITHUB REPOSITORY BRANCH NAVIGATION MATRIX
 
 The repository is organized following a structured **Multi-Track Git Flow Hierarchy**:
 
 | Technical Sub-Track | Baseline Production Branch | Active Development Branch | Primary Workspace Directory |
 | :--- | :--- | :--- | :--- |
-| **MCU Track (ARM Cortex-M0 SN32F407)** | ?? [`MCU_main`](https://github.com/zok213/porygon/tree/MCU_main) | ??? [`MCU_dev`](https://github.com/zok213/porygon/tree/MCU_dev) | [`MCU_Contest_2026/`](MCU_Contest_2026/) |
-| **FPGA Track (Gowin GW1NSR-4C Verilog RTL)**| ?? [`FPGA_main`](https://github.com/zok213/porygon/tree/FPGA_main) | ??? [`FPGA_dev`](https://github.com/zok213/porygon/tree/FPGA_dev) | [`FPGA/`](FPGA/) |
-| **Final Official Release** | ?? [`release`](https://github.com/zok213/porygon/tree/release) | ó | Complete Repository |
+| **MCU Track (ARM Cortex-M0 SN32F407)** | üü¢ [`MCU_main`](https://github.com/zok213/porygon/tree/MCU_main) | üõ†Ô∏è [`MCU_dev`](https://github.com/zok213/porygon/tree/MCU_dev) | [`MCU_Contest_2026/`](MCU_Contest_2026/) |
+| **FPGA Track (Gowin GW1NSR-4C Verilog RTL)**| üü¢ [`FPGA_main`](https://github.com/zok213/porygon/tree/FPGA_main) | üõ†Ô∏è [`FPGA_dev`](https://github.com/zok213/porygon/tree/FPGA_dev) | [`FPGA/`](FPGA/) |
+| **Final Official Release** | üèÜ [`release`](https://github.com/zok213/porygon/tree/release) | ‚Äî | Complete Repository |
 
 ---
 
@@ -50,46 +43,6 @@ This project delivers a comprehensive engineering solution for the **Da Nang FPG
 
 ---
 
-## 3. System Directory Map
-
-```
-porygon/
-+-- .github/                                              # CI/CD Workflows & Templates
-+-- .gitignore                                            # Root build exclusions
-+-- CODE_OF_CONDUCT.md                                    # Contributor Covenant Code of Conduct
-+-- CONTRIBUTING.md                                       # Multi-track Git Flow governance rules
-+-- LICENSE                                               # MIT License
-+-- README.md                                             # Master Navigation Hub (VI & EN)
-+-- README_VI.md                                          # Vietnamese Master Specification
-+-- README_EN.md                                          # English Master Specification
-+-- SECURITY.md                                           # Security Policy
-+-- SETUP.md                                              # Toolchain setup notes
-+-- –? THI MCU 2026.pdf                                   # Official MCU Specification
-+-- –? THI FGPA 2026.docx.pdf                             # Official FPGA Specification
-+-- Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v (1).pdf # Gowin FPGA Handbook
-+-- FPGA/                                                 # FPGA TRACK SUB-REPOSITORY (GW1NSR-4C)
-¶   +-- .gitignore                                        # Toolchain build exclusions
-¶   +-- README.md                                         # FPGA Technical Specification (Bilingual)
-¶   +-- TESTING.md                                        # Verification Matrix & ModelSim Guide
-¶   +-- README_SIMULATION_SCALING.md                      # Simulation Time Acceleration Report
-¶   +-- pwm11.gprj                                        # Gowin EDA Project Configuration
-¶   +-- constr/pwm11.cst                                  # Physical Pin Constraints
-¶   +-- src/                                              # Synthesizable RTL Modules
-¶   +-- sim/                                              # Self-Checking Simulation Suite
-¶   +-- docs/                                             # Specification & Architecture Archive
-+-- MCU_Contest_2026/                                     # MCU TRACK SUB-REPOSITORY (SN32F407)
-    +-- .gitignore                                        # Keil MDK exclusions
-    +-- README.md                                         # MCU Technical Specification
-    +-- TESTING.md                                        # MCU Verification Matrix & Demo Script
-    +-- main_clock_skeleton.c                             # Production C firmware
-    +-- I2C0.c / I2C.h                                    # Interrupt-driven I2C0 driver
-    +-- Clock_Simulation.uvprojx                          # Keil MDK Project
-    +-- Docs/                                             # Contest archive
-    +-- RTE/                                              # CMSIS & Device drivers
-```
-
----
-
-## 4. License
+## 3. License
 
 Distributed under the **MIT License**. Maintained for **zok213/porygon**.
