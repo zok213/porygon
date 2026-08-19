@@ -18,8 +18,8 @@
 | **Khối 1: Clock, Reset & Debounce** | **2.0đ** | PLL nâng xung lên 50MHz; lọc dội phím 2 nút bấm xuất xung 1-clock. | Sử dụng IP Core `Gowin_PLLVR` ($27\text{ MHz} \rightarrow 50\text{ MHz}$); mạch Reset Synchronizer giữ reset $20\text{ ms}$ lúc boot; 2 bộ `button_debounce` 2 tầng D-FF + counter $20\text{ ms}$ ($1,000,000$ nhịp clock) + falling edge detector. |
 | **Khối 2: Điều Chế PWM LED** | **2.5đ** | Mode LOW 25%, Mode HIGH 100%, Mode AUTO Thở $2.0\text{ s}$ không chớp giật. | Module `pwm_led_controller`: sóng mang $1\text{ kHz}$ ($50,000$ nhịp clock), nấc tăng giảm $50$ nhịp/ms $\rightarrow 1,000$ nấc tăng ($1.0\text{ s}$) $+ 1,000$ nấc giảm ($1.0\text{ s}$) $= 2.000\text{ s}$. |
 | **Khối 3: Truyền Dữ Liệu UART TX** | **2.5đ** | UART 115200 bps 8N1 phát chuỗi `"MODE: LOW\r\n"`, `"MODE: HIGH\r\n"`, `"MODE: AUTO\r\n"`. | Module `uart_tx_string`: `BAUD_DIV = 434` (sai số $0.0064\% \ll \pm 2.0\%$), FSM phát chuỗi ASCII kèm byte `0x0D, 0x0A`, chốt `mode_latched` chống xung đột. |
-| **Khối 4: FSM Trung Tâm & Mô Phỏng** | **3.0đ** | Reset $\rightarrow$ LOW (phát UART); BTN1 đổi LOW ↔ HIGH; BTN2 $\rightarrow$ AUTO; BTN1 trong AUTO $\rightarrow$ LOW. Kèm Testbench & Báo cáo. | Module `top_system`: FSM trung tâm tự động gửi UART khi boot; testbench `tb_top_system_v2` tự động kiểm thử 11 ca kiểm tra; kịch bản sóng ModelSim `wavefinal.do`. |
-| **TỔNG ĐIỂM TOÀN KHỐI FPGA** | **10.0đ** | **Đầy đủ mã nguồn, ràng buộc .cst, mô phỏng self-checking, thuyết minh tăng tốc mô phỏng.** | **Tuân thủ hoàn toàn 100% yêu cầu đề bài** |
+| **Khối 4: FSM Trung Tâm & Mô Phỏng** | **3.0đ** | Reset $\rightarrow$ LOW (phát UART); BTN1 đổi LOW ↔ HIGH; BTN2 $\rightarrow$ AUTO; BTN1 trong AUTO $\rightarrow$ LOW. Kèm Testbench & Báo cáo. | Module `top_system`: FSM trung tâm tự động gửi UART khi boot; testbench `tb_top_system_v2` tự động kiểm thử 25 ca kiểm tra (0 lỗi); thư viện `prim_sim.v`; kịch bản sóng ModelSim `wavefinal.do` & `run_sim.do`. |
+| **TỔNG ĐIỂM TOÀN KHỐI FPGA** | **10.0đ** | **Đầy đủ mã nguồn, ràng buộc .cst, mô phỏng self-checking, thư viện prim_sim.v tự chứa.** | **Tuân thủ hoàn toàn 100% yêu cầu đề bài** |
 
 ---
 
@@ -41,6 +41,8 @@ porygon/
 ├── README.md                                             # Master Thuyết minh Kiến trúc Hệ thống (Song ngữ VI & EN đầy đủ)
 ├── README_VI.md                                          # Bản Thuyết minh Kiến trúc Kỹ thuật Tiếng Việt chuẩn hóa
 ├── README_EN.md                                          # Master System Architectural Specification (English)
+├── README_MODELSIM_SIMULATION.md                         # Hướng dẫn chi tiết chạy mô phỏng ModelSim SE 10.6d
+├── README_KEIL_DEBUG_SIMULATION.md                       # Hướng dẫn chi tiết cấu hình Debug Watch 1 trên Keil µVision5
 ├── SECURITY.md                                           # Chính sách bảo mật & bảo vệ tài nguyên phần cứng
 ├── SETUP.md                                              # Hướng dẫn thiết lập môi trường Gowin EDA & ModelSim
 ├── ĐỀ THI FGPA 2026.docx.pdf                             # Bản gốc Đề thi Khối FPGA Đà Nẵng 2026
@@ -49,10 +51,13 @@ porygon/
 └── FPGA/                                                 # Thư mục Không gian làm việc Dự án Gowin EDA
     ├── .gitignore                                        # Loại bỏ tệp đầu ra tổng hợp impl/ & mô phỏng work/
     ├── README.md                                         # Báo cáo kỹ thuật chi tiết thư mục FPGA & Hướng dẫn Rebuild
-    ├── TESTING.md                                        # Ma trận kiểm thử tự động 11 kịch bản & Hướng dẫn ModelSim
+    ├── README_MODELSIM_SIMULATION.md                     # Hướng dẫn chạy mô phỏng ModelSim nhanh bằng 1 lệnh
+    ├── TESTING.md                                        # Ma trận kiểm thử tự động 25 kịch bản & Hướng dẫn ModelSim
     ├── ISSUE_ANALYSIS_DEEP_DIVE.md                       # Báo cáo phân tích chuyên sâu & thực chứng 6 lỗi FPGA
     ├── README_SIMULATION_SCALING.md                      # Thuyết minh kỹ thuật tỷ lệ thời gian mô phỏng tăng tốc
     ├── pwm11.gprj                                        # Tệp cấu hình dự án Gowin EDA (GW1NSR-4C / Kiwi Nano 4K)
+    ├── run_sim.do                                        # Kịch bản Tcl chạy tự động toàn bộ mô phỏng trên ModelSim
+    ├── wavefinal.do                                      # Cấu hình hiển thị dạng sóng & 5 thước đo thời gian
     ├── constr/                                           # Thư mục chứa tệp ràng buộc vật lý chân phần cứng
     │   └── pwm11.cst                                     # Ràng buộc chân FPGA (Clock, Reset, BTN1/2, LED, UART TX)
     ├── src/                                              # Mã nguồn Verilog RTL tổng hợp được (Synthesizable RTL)
@@ -61,9 +66,10 @@ porygon/
     │   ├── pwm_led_controller.v                          # Bộ điều chế PWM 1kHz (LOW 25%, HIGH 100%, AUTO Thở 2.0s)
     │   ├── uart_tx_string.v                              # Bộ truyền chuỗi UART 115200 8N1 có chốt an toàn trạng thái
     │   ├── gowin_pllvr.v                                 # Top wrapper IP Core Gowin PLLVR (27MHz -> 50MHz)
+    │   ├── prim_sim.v                                    # Thư viện mô phỏng linh kiện Gowin (Zero-Dependency)
     │   └── ip/gowin_pllvr/                               # Tệp cấu hình gốc IP Generator (.ipc, .mod, .v, _tmp.v)
     ├── sim/                                              # Thư mục kịch bản mô phỏng kiểm thử (Verification Suite)
-    │   ├── tb_top_system_v2.v                            # Testbench tự động kiểm tra toàn diện 11 kịch bản lỗi
+    │   ├── tb_top_system_v2.v                            # Testbench tự động kiểm tra toàn diện 25 chỉ tiêu (0 lỗi)
     │   ├── tb_uart_tx.v                                  # Testbench đo thời gian phát chuỗi khối UART
     │   └── wavefinal.do                                  # Kịch bản dạng sóng & Thước đo Cursor tự động trên ModelSim
     └── docs/                                             # Thư mục tài liệu đề bài và thuyết minh cuộc thi
@@ -128,34 +134,28 @@ Toàn bộ chân tín hiệu được khai báo trong tệp ràng buộc vật l
 
 ```mermaid
 stateDiagram-v2
-    [*] --> MODE_LOW : Cấp nguồn / sys_rst_n giải phóng (Tự động phát "MODE: LOW
-")
+    [*] --> MODE_LOW : Cap nguon / sys_rst_n giai phong (Phat MODE_LOW)
 
     state MODE_LOW {
         [*] --> PWM_25_Percent : Duty Cycle 25% (1kHz)
     }
 
     state MODE_HIGH {
-        [*] --> PWM_100_Percent : Duty Cycle 100% (Sáng liên tục)
+        [*] --> PWM_100_Percent : Duty Cycle 100% (Sang lien tuc)
     }
 
     state MODE_AUTO {
-        [*] --> PWM_Breathing : Thở 0% ↔ 100% trong 2.0s
+        [*] --> PWM_Breathing : Tho 0% <--> 100% trong 2.0s
     }
 
-    MODE_LOW --> MODE_HIGH : Nhấn Nút 1 (btn1_pulse) / Phát "MODE: HIGH
-"
-    MODE_HIGH --> MODE_LOW : Nhấn Nút 1 (btn1_pulse) / Phát "MODE: LOW
-"
+    MODE_LOW --> MODE_HIGH : Nhan Nut 1 / Phat MODE_HIGH
+    MODE_HIGH --> MODE_LOW : Nhan Nut 1 / Phat MODE_LOW
 
-    MODE_LOW --> MODE_AUTO : Nhấn Nút 2 (btn2_pulse) / Phát "MODE: AUTO
-"
-    MODE_HIGH --> MODE_AUTO : Nhấn Nút 2 (btn2_pulse) / Phát "MODE: AUTO
-"
+    MODE_LOW --> MODE_AUTO : Nhan Nut 2 / Phat MODE_AUTO
+    MODE_HIGH --> MODE_AUTO : Nhan Nut 2 / Phat MODE_AUTO
 
-    MODE_AUTO --> MODE_LOW : Nhấn Nút 1 (btn1_pulse) / Phát "MODE: LOW
-"
-    MODE_AUTO --> MODE_AUTO : Nhấn Nút 2 (btn2_pulse) / Giữ nguyên trạng thái
+    MODE_AUTO --> MODE_LOW : Nhan Nut 1 / Phat MODE_LOW
+    MODE_AUTO --> MODE_AUTO : Nhan Nut 2 / Giu nguyen AUTO
 ```
 
 ### Bảng Chuyển Trạng Thái FSM & Khung Truyền UART
@@ -236,22 +236,35 @@ sequenceDiagram
 
 ---
 
-## 10. Thuyết Minh Kỹ Thuật Co Ngắn Thời Gian Mô Phỏng (Simulation Acceleration)
-*(Trích từ Báo Cáo Kỹ Thuật [`FPGA/README_SIMULATION_SCALING.md`](FPGA/README_SIMULATION_SCALING.md))*
+## 10. Hướng Dẫn Mô Phỏng ModelSim Tự Chứa (Zero-Dependency Quick Start)
+*(Chi tiết tại [`FPGA/README_MODELSIM_SIMULATION.md`](FPGA/README_MODELSIM_SIMULATION.md))*
 
-Trong thiết kế vi mạch ASIC/FPGA chuyên nghiệp, các chu kỳ hoạt động thực tế kéo dài hàng giây (như hiệu ứng LED Thở $2.0\text{ s}$) nếu chạy mô phỏng nguyên bản trên phần mềm ModelSim sẽ mất hàng triệu nhịp đếm xung clock, gây đơ giật phần mềm và tốn thời gian tính toán của máy tính.
+Dự án tích hợp sẵn thư viện linh kiện Gowin [`FPGA/src/prim_sim.v`](FPGA/src/prim_sim.v) giúp chạy mô phỏng trơn tru trên mọi máy tính mà không cần cài đặt Gowin EDA:
 
-Do đó, dự án áp dụng kỹ thuật **Truyền đè tham số (Parameter Overriding)** để thu hẹp khoảng thời gian quan sát trên phần mềm mô phỏng nhưng **bảo toàn 100% tính đúng đắn của logic thiết kế**:
+### 🚀 Chạy Tự Động Bằng 1 Lệnh Tcl Duy Nhất
+1. Mở phần mềm **ModelSim SE 10.6d**.
+2. Chọn menu **`File` $\rightarrow$ `Change Directory...`** $\rightarrow$ Trỏ đến thư mục `FPGA/`.
+3. Trong cửa sổ **Transcript**, gõ lệnh sau và bấm **Enter**:
+   ```tcl
+   do run_sim.do
+   ```
 
-| Thông số Kỹ thuật | Mã RTL Nạp Mạch Thật (`top_system.v`) | Cấu Hình Mô Phỏng (`tb_top_system_v2.v`) | Mục Đích Tối Ưu |
-| :--- | :---: | :---: | :--- |
-| **Tần số PWM (`PWM_FREQ`)** | **$1\text{ kHz}$** ($1,000\text{ Hz}$) | **$50\text{ kHz}$** ($50,000\text{ Hz}$) | `defparam uut.u_pwm.PWM_FREQ = 50_000;` |
-| **Chu kỳ 1 xung PWM ($T$)** | **$1.0\text{ ms}$** ($1,000\mu\text{s}$) | **$20.0\mu\text{s}$** ($20,000\text{ ns}$) | Giúp quan sát xung PWM sắc nét trên ModelSim |
-| **Độ rộng mức CAO (Mode LOW 25%)** | $250\mu\text{s}$ | $5.0\mu\text{s}$ | Tỷ lệ Duty Cycle $25\%$ giữ nguyên |
-| **Độ rộng mức CAO (Mode HIGH 100%)** | $1.0\text{ ms}$ | $20.0\mu\text{s}$ | Tỷ lệ Duty Cycle $100\%$ giữ nguyên |
-| **Chu kỳ 1 vòng Thở (AUTO)** | **$2.0\text{ giây}$** | **$40\text{ ms}$** | Co từ $2.0\text{ s} \rightarrow 40\text{ ms}$ để mô phỏng tức thì |
-| **Tốc độ Baudrate UART** | **$115,200\text{ bps}$** ($8\text{N}1$) | **$115,200\text{ bps}$** ($8\text{N}1$) | Giữ nguyên chính xác $8.68\mu\text{s}$/bit |
-| **Thời gian Lọc dội phím (Debounce)** | **$20\text{ ms}$** | **$20\text{ ms}$** | Giữ nguyên logic chống dội phím thực |
+### 📊 Kết Quả Mô Phỏng Tự Động (25 Checks, 0 Lỗi):
+```text
+# [35000000 ns] Nhan Button 1
+#   12 byte, 0 loi
+#   bit period ~8680.556 ns, baud ~115200.0 bps, sai so 0.000%
+# [75000000 ns] duty HIGH = 100.00%
+# ========================================
+# CHUNG MINH LED THO DUNG 2.0s (qua transcript)
+# ========================================
+# Chu ky 1: pha giam=1.000000s, pha tang=1.000000s, TONG=2.000000s (ky vong 2.000000s)
+#   -> OK: chu ky 1 dat yeu cau 2.0s
+# Chu ky 2: pha giam=1.000000s, pha tang=1.000000s, TONG=2.000000s (ky vong 2.000000s)
+#   -> OK: chu ky 2 dat yeu cau 2.0s
+# ========================================
+# Tong: 25 check, 0 loi
+```
 
 ---
 
@@ -272,9 +285,9 @@ Do đó, dự án áp dụng kỹ thuật **Truyền đè tham số (Parameter O
 5. **Độ Mịn Tuyến Tính Trong Hiệu Ứng Thở (Smooth Breathing Interpolation)**:
    - *Vấn đề*: Nếu chia quá ít nấc độ sáng, mắt người sẽ thấy LED tăng/giảm độ sáng giật cục từng nấc.
    - *Giải pháp*: Chia đều thành $2,000$ nấc độ sáng cực mịn, mỗi nấc tăng/giảm $50$ nhịp clock sau mỗi $1\text{ ms}$, đem lại cảm giác thở nhẹ nhàng, êm ái tự nhiên.
-6. **Bảo Toàn Tương Đương Logic Khi Tăng Tốc Mô Phỏng**:
-   - *Vấn đề*: Việc thay đổi mã nguồn gốc để mô phỏng có thể dẫn đến sai lệch khi nạp xuống mạch thật.
-   - *Giải pháp*: Giữ nguyên 100% mã RTL gốc, chỉ ghi đè tham số `PWM_FREQ = 50000` trong Testbench (`defparam`), bảo toàn tuyệt đối tính toàn vẹn của mã tổng hợp.
+6. **Mô Phỏng Tự Chứa Không Lỗi Thiếu Thư Viện Gowin**:
+   - *Vấn đề*: Khi ban giám khảo chấm bài trên ModelSim không cài sẵn Gowin EDA, việc biên dịch `Gowin_PLLVR` sẽ báo lỗi `Module 'PLLVR' is not defined`.
+   - *Giải pháp*: Đính kèm tệp thư viện macro hành vi Gowin [`FPGA/src/prim_sim.v`](FPGA/src/prim_sim.v), bảo đảm biên dịch và chạy mô phỏng 100% độc lập, không phụ thuộc môi trường cài đặt.
 
 ---
 
@@ -315,54 +328,32 @@ $$T_{\text{cycle}} = (1,000\text{ nấc tăng} \times 1.0\text{ ms}) + (1,000\te
 | **Điều Chế PWM** | Tần số PWM thấp gây nhấp nháy mắt; ít nấc độ sáng gây giật nấc. | Sóng mang $1\text{ kHz}$ không nhấp nháy + $2,000$ nấc độ sáng siêu mịn cho chu kỳ thở $2.000\text{ s}$. |
 | **Truyền UART** | Gửi từng ký tự đơn `'A'`, không chốt trạng thái; dễ méo chuỗi khi bấm phím. | Gửi đầy đủ chuỗi `"MODE: ... 
 "` + Chốt `mode_latched` an toàn + Sai số baud chỉ $0.0064\%$. |
-| **Mô Phỏng Kiểm Thử** | Chạy mô phỏng thời gian thực $2.0\text{ s}$ làm đơ ModelSim; quan sát bằng mắt. | Áp dụng Simulation Acceleration ($50\text{ kHz}$) chạy trong $40\text{ ms}$ + Testbench tự động 11 kịch bản. |
+| **Mô Phỏng Kiểm Thử** | Thiếu thư viện linh kiện, báo lỗi `PLLVR undefined`; quan sát bằng mắt. | Thư viện `prim_sim.v` tự chứa + Testbench tự động 25 chỉ tiêu chứng minh chu kỳ thở $2.000\text{ s}$. |
 
 ---
 
 ## 14. Ma Trận Kiểm Thử Tự Động & Hướng Dẫn Mô Phỏng ModelSim
 
-### Ma Trận 11 Ca Kiểm Thử Tự Động ([`FPGA/sim/tb_top_system_v2.v`](FPGA/sim/tb_top_system_v2.v))
-| Ca Kiểm Thử | Kịch Bản Kích Hoạt | Hành Vi Mong Đợi | Bộ Kiểm Tra Tự Động | Kết Quả |
+### Ma Trận 25 Chỉ Tiêu Kiểm Thử Tự Động ([`FPGA/sim/tb_top_system_v2.v`](FPGA/sim/tb_top_system_v2.v))
+| Nhóm Kiểm Thử | Kịch Bản Kích Hoạt | Hành Vi Mong Đợi | Bộ Kiểm Tra Tự Động | Kết Quả Thực Tế |
 | :---: | :--- | :--- | :--- | :---: |
 | **TC-01** | Power-on / Reset | Hệ thống về LOW; phát `"MODE: LOW
-"` | `uart_check_message(..., 11)` | **PASS (11/11)** |
+"` | `uart_check_message(..., 11)` | **PASS (11/11 bytes)** |
 | **TC-02** | Đo Duty Mode LOW | Tỷ lệ mức cao đạt đúng 25% | `measure_pwm_duty("LOW", ...)` | **PASS (25.0%)** |
 | **TC-03** | Nhấn Button 1 | Chuyển LOW $\rightarrow$ HIGH; phát `"MODE: HIGH
-"` | `uart_check_message(..., 12)` | **PASS (12/12)** |
+"` | `uart_check_message(..., 12)` | **PASS (12/12 bytes)** |
 | **TC-04** | Đo Duty Mode HIGH | Tỷ lệ mức cao đạt đúng 100% | `measure_pwm_duty("HIGH", ...)` | **PASS (100.0%)** |
 | **TC-05** | Nhấn tiếp Button 1 | Chuyển HIGH $\rightarrow$ LOW; phát `"MODE: LOW
-"` | `uart_check_message(..., 11)` | **PASS (11/11)** |
+"` | `uart_check_message(..., 11)` | **PASS (11/11 bytes)** |
 | **TC-06** | Nhấn Button 2 | Chuyển sang AUTO; phát `"MODE: AUTO
-"` | `uart_check_message(..., 12)` | **PASS (12/12)** |
-| **TC-07** | Quét 40 mẫu Thở AUTO | Duty Cycle tăng/giảm đơn điệu liên tục | `measure_breath_sample(...)` | **PASS (40 mẫu)** |
-| **TC-08** | Nhấn Button 1 trong AUTO | Ép chuyển về LOW; phát `"MODE: LOW
-"` | `uart_check_message(..., 11)` | **PASS (11/11)** |
-| **TC-09** | Nhiễu rung phím (Bounce) | Chỉ kích hoạt 1 lần duy nhất | `glitchy_press_btn1` | **PASS** |
-| **TC-10** | Xung cực ngắn (< 5ms) | Bị loại bỏ hoàn toàn, không đổi mode | `short_press_btn1` | **PASS** |
-| **TC-11** | Đo Baudrate UART | Chu kỳ bit $8,680.56\text{ ns}$, sai số $\le 0.01\%$ | `uart_check_message` bit timer | **PASS (0.006%)** |
-
-### Hướng Dẫn Chạy Mô Phỏng Trên ModelSim / QuestaSim
-1. Mở phần mềm **ModelSim**, chuyển thư mục làm việc về `FPGA/`:
-   ```tcl
-   cd d:/FPGA&MCU/FPGA
-   ```
-2. Tạo thư viện làm việc và biên dịch toàn bộ RTL + Testbench:
-   ```tcl
-   vlib work
-   vmap work work
-   vlog src/button_debounce.v
-   vlog src/pwm_led_controller.v
-   vlog src/uart_tx_string.v
-   vlog src/gowin_pllvr.v
-   vlog src/top_system.v
-   vlog sim/tb_top_system_v2.v
-   ```
-3. Khởi chạy mô phỏng và nạp kịch bản dạng sóng:
-   ```tcl
-   vsim -voptargs=+acc work.tb_top_system_v2
-   do sim/wavefinal.do
-   run -all
-   ```
+"` | `uart_check_message(..., 12)` | **PASS (12/12 bytes)** |
+| **TC-07** | Đo Chu kỳ 1 Thở AUTO | Pha giảm $1.000\text{ s}$ + Pha tăng $1.000\text{ s} = 2.000\text{ s}$ | `prove_breath_2s_via_transcript` | **PASS (2.000000s)** |
+| **TC-08** | Đo Chu kỳ 2 Thở AUTO | Pha giảm $1.000\text{ s}$ + Pha tăng $1.000\text{ s} = 2.000\text{ s}$ | `prove_breath_2s_via_transcript` | **PASS (2.000000s)** |
+| **TC-09** | Nhấn Button 1 trong AUTO | Ép chuyển về LOW; phát `"MODE: LOW
+"` | `uart_check_message(..., 11)` | **PASS (11/11 bytes)** |
+| **TC-10** | Nhiễu rung phím (Bounce) | Rung nẩy phím chỉ tính đúng 1 lần duy nhất | `glitchy_press_btn1` | **PASS (1 lần đổi)** |
+| **TC-11** | Xung cực ngắn (< 5ms) | Bị loại bỏ hoàn toàn, không đổi mode | `short_press_btn1` | **PASS (Không đổi)** |
+| **TC-12** | Reset khi đang ở HIGH | Hệ thống quay về LOW & phát lại UART | `trigger_reset` | **PASS (11/11 bytes)** |
 
 ---
 
@@ -386,8 +377,8 @@ $$T_{\text{cycle}} = (1,000\text{ nấc tăng} \times 1.0\text{ ms}) + (1,000\te
 | **Block 1: Clock, Reset & Debounce** | **2.0 pts** | PLL synthesis to 50MHz; 2-button debouncing with 1-clock pulse output. | `Gowin_PLLVR` IP Core ($27\text{ MHz} \rightarrow 50\text{ MHz}$); 20ms startup reset synchronizer; 2x `button_debounce` modules with 2-stage D-FF + 20ms counter + falling edge detector. |
 | **Block 2: PWM LED Controller** | **2.5 pts** | Mode LOW 25%, Mode HIGH 100%, Mode AUTO 2.0s flicker-free breathing. | `pwm_led_controller`: 1kHz carrier (50,000 counts), 50 counts/ms step $\rightarrow$ 1,000 steps up (1.0s) + 1,000 steps down (1.0s) = 2.000s. |
 | **Block 3: UART TX Telemetry** | **2.5 pts** | 115200 bps 8N1 transmitting `"MODE: LOW\r\n"`, `"MODE: HIGH\r\n"`, `"MODE: AUTO\r\n"`. | `uart_tx_string`: `BAUD_DIV = 434` (0.0064% baud error), ASCII FSM with `\r\n` delimiters and `mode_latched` state protection. |
-| **Block 4: Supervisor FSM & Sim** | **3.0 pts** | Reset $\rightarrow$ LOW (UART boot); BTN1 toggles LOW ↔ HIGH; BTN2 $\rightarrow$ AUTO; BTN1 in AUTO $\rightarrow$ LOW. Includes testbench and docs. | `top_system`: Supervisor FSM with boot telemetry; automated self-checking testbench `tb_top_system_v2` (11 test cases); ModelSim `wavefinal.do` script. |
-| **TOTAL FPGA SCORE** | **10.0 pts** | **Complete synthesizable RTL, .cst constraints, self-checking testbench, scaling report.** | **100% Full Compliance with Contest Specification** |
+| **Block 4: Supervisor FSM & Sim** | **3.0 pts** | Reset $\rightarrow$ LOW (UART boot); BTN1 toggles LOW ↔ HIGH; BTN2 $\rightarrow$ AUTO; BTN1 in AUTO $\rightarrow$ LOW. Includes testbench and docs. | `top_system`: Supervisor FSM with boot telemetry; automated self-checking testbench `tb_top_system_v2` (25 checks, 0 errors); Gowin `prim_sim.v`; ModelSim `run_sim.do` & `wavefinal.do`. |
+| **TOTAL FPGA SCORE** | **10.0 pts** | **Complete synthesizable RTL, .cst constraints, self-checking testbench, zero-dependency prim_sim.v.** | **100% Full Compliance with Contest Specification** |
 
 ---
 
@@ -406,6 +397,8 @@ porygon/
 ├── README.md                                             # Master Technical Specification (Bilingual VI & EN)
 ├── README_VI.md                                          # Vietnamese Master Specification
 ├── README_EN.md                                          # English Master Specification
+├── README_MODELSIM_SIMULATION.md                         # ModelSim SE 10.6d Simulation Guide
+├── README_KEIL_DEBUG_SIMULATION.md                       # Keil µVision5 Watch 1 Debug Simulation Guide
 ├── SECURITY.md                                           # Security Policy & Hardware IP Protection
 ├── SETUP.md                                              # Toolchain setup instructions (Gowin & ModelSim)
 ├── ĐỀ THI FGPA 2026.docx.pdf                             # Official FPGA Contest Specification
@@ -414,10 +407,13 @@ porygon/
 └── FPGA/                                                 # FPGA Workspace Directory
     ├── .gitignore                                        # Gowin & ModelSim build output exclusions
     ├── README.md                                         # FPGA Subsystem Specification & Rebuild Guide
-    ├── TESTING.md                                        # Verification Suite & ModelSim Guide
+    ├── README_MODELSIM_SIMULATION.md                     # ModelSim Quick Start Guide
+    ├── TESTING.md                                        # Verification Suite & ModelSim Guide (25 Checks)
     ├── ISSUE_ANALYSIS_DEEP_DIVE.md                       # Comprehensive Analysis of 6 Hardware Bugs
     ├── README_SIMULATION_SCALING.md                      # Simulation Time Acceleration Report
     ├── pwm11.gprj                                        # Gowin EDA Project Configuration
+    ├── run_sim.do                                        # One-click automated ModelSim execution script
+    ├── wavefinal.do                                      # ModelSim Waveform & Cursor Configuration
     ├── constr/pwm11.cst                                  # Physical Pin Constraints (Kiwi Nano 4K)
     ├── src/                                              # Synthesizable RTL Modules
     │   ├── top_system.v                                  # Top Integration & Supervisor FSM
@@ -425,9 +421,10 @@ porygon/
     │   ├── pwm_led_controller.v                          # 1kHz PWM Controller (LOW, HIGH, AUTO 2.0s)
     │   ├── uart_tx_string.v                              # 115200 8N1 UART Serializer
     │   ├── gowin_pllvr.v                                 # Gowin PLLVR Wrapper (27MHz -> 50MHz)
+    │   ├── prim_sim.v                                    # Gowin Simulation Primitive Model Library
     │   └── ip/gowin_pllvr/                               # IP Generator Core Configuration
     ├── sim/                                              # Verification Testbenches
-    │   ├── tb_top_system_v2.v                            # Automated System Testbench (11 Test Cases)
+    │   ├── tb_top_system_v2.v                            # Automated System Testbench (25 Checks, 0 Errors)
     │   ├── tb_uart_tx.v                                  # UART Timing Testbench
     │   └── wavefinal.do                                  # ModelSim Waveform & Cursor Script
     └── docs/                                             # Technical Documentation Archive
@@ -488,8 +485,7 @@ flowchart TD
 
 ```mermaid
 stateDiagram-v2
-    [*] --> MODE_LOW : Power-on / sys_rst_n deasserted (Emits "MODE: LOW
-")
+    [*] --> MODE_LOW : Power-on / sys_rst_n deasserted (Emits MODE_LOW)
 
     state MODE_LOW {
         [*] --> PWM_25_Percent : Duty Cycle 25% (1kHz)
@@ -500,22 +496,17 @@ stateDiagram-v2
     }
 
     state MODE_AUTO {
-        [*] --> PWM_Breathing : Breathing 0% ↔ 100% over 2.0s
+        [*] --> PWM_Breathing : Breathing 0% <--> 100% over 2.0s
     }
 
-    MODE_LOW --> MODE_HIGH : Button 1 Pressed (btn1_pulse) / Emits "MODE: HIGH
-"
-    MODE_HIGH --> MODE_LOW : Button 1 Pressed (btn1_pulse) / Emits "MODE: LOW
-"
+    MODE_LOW --> MODE_HIGH : Button 1 Pressed / Emits MODE_HIGH
+    MODE_HIGH --> MODE_LOW : Button 1 Pressed / Emits MODE_LOW
 
-    MODE_LOW --> MODE_AUTO : Button 2 Pressed (btn2_pulse) / Emits "MODE: AUTO
-"
-    MODE_HIGH --> MODE_AUTO : Button 2 Pressed (btn2_pulse) / Emits "MODE: AUTO
-"
+    MODE_LOW --> MODE_AUTO : Button 2 Pressed / Emits MODE_AUTO
+    MODE_HIGH --> MODE_AUTO : Button 2 Pressed / Emits MODE_AUTO
 
-    MODE_AUTO --> MODE_LOW : Button 1 Pressed (btn1_pulse) / Emits "MODE: LOW
-"
-    MODE_AUTO --> MODE_AUTO : Button 2 Pressed (btn2_pulse) / Remain in AUTO
+    MODE_AUTO --> MODE_LOW : Button 1 Pressed / Emits MODE_LOW
+    MODE_AUTO --> MODE_AUTO : Button 2 Pressed / Remain in AUTO
 ```
 
 ---
@@ -550,13 +541,8 @@ $$T_{\text{cycle}} = (1,000\text{ steps up} \times 1.0\text{ ms}) + (1,000\text{
 2. Double click **Place & Route** $\rightarrow$ Verify **Success (0 Errors, 0 Warnings)**.
 3. Program `impl/pnr/pwm11.fs` via **Gowin Programmer**.
 
-### ModelSim Simulation
+### ModelSim Quick Start (Zero-Dependency)
 ```tcl
 cd d:/FPGA&MCU/FPGA
-vlib work
-vmap work work
-vlog src/button_debounce.v src/pwm_led_controller.v src/uart_tx_string.v src/gowin_pllvr.v src/top_system.v sim/tb_top_system_v2.v
-vsim -voptargs=+acc work.tb_top_system_v2
-do sim/wavefinal.do
-run -all
+do run_sim.do
 ```

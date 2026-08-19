@@ -1,134 +1,95 @@
-# FPGA Verification Suite & Simulation Testing Guide (Da Nang Contest 2026)
-
-[![CI](https://github.com/zok213/porygon/actions/workflows/ci.yml/badge.svg)](https://github.com/zok213/porygon/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-> **Navigation / Chuyển hướng Ngôn ngữ**:  
-> 🇻🇳 [Tiếng Việt — Kế Hoạch & Báo Cáo Kiểm Thử FPGA](#-kế-hoạch--báo-cáo-kiểm-thử-fpga-tiếng-việt)  
-> 🇬🇧 [English — FPGA Verification & Testing Specification](#-fpga-verification--testing-specification-english)
+# KỊCH BẢN KIỂM THỬ TỰ ĐỘNG & HƯỚNG DẪN MÔ PHỎNG DẠNG SÓNG (TESTING SUITE)
+## Dự Án FPGA GW1NSR-4C — Đội Thi Porygon (Da Nang Contest 2026)
 
 ---
 
-# 🇻🇳 KẾ HOẠCH & BÁO CÁO KIỂM THỬ FPGA (TIẾNG VIỆT)
+## 1. 🎯 TỔNG QUAN HỆ THỐNG KIỂM THỬ TỰ ĐỘNG (SELF-CHECKING TESTBENCH)
 
-## 1. Tổng Quan Về Kiến Trúc Kiểm Thử (Verification Architecture)
+Tệp Testbench [`sim/tb_top_system_v2.v`](sim/tb_top_system_v2.v) được thiết kế theo tiêu chuẩn kiểm thử vi mạch số công nghiệp, tích hợp **25 chỉ tiêu kiểm tra tự động (Self-Checking Assertions)**:
+- **Tự động đối soát từng byte UART**: Bắt sườn xuống của bit Start, lấy mẫu tại trung tâm chu kỳ bit ($8,680.56\text{ ns}$), so sánh chuỗi ASCII và kiểm tra 2 byte kết thúc `0x0D (\r)`, `0x0A (\n)`.
+- **Tự động đo thời gian chu kỳ Thở LED 2.0s**: Sử dụng cờ đảo chiều `breath_dir` để bắt đỉnh ($100\%$) và đáy ($0\%$), tính toán thời gian pha tăng, pha giảm và tổng chu kỳ với độ chính xác đến 6 chữ số thập phân ($1.000000\text{ s} + 1.000000\text{ s} = 2.000000\text{ s}$).
+- **Tự động kiểm tra chống nẩy phím (Bounce)**: Tạo chuỗi xung rung nẩy kéo dài $5\text{ ms}$ để chứng minh FSM chỉ kích hoạt đúng 1 lần duy nhất.
+- **Tự chứa hoàn toàn (Zero-Dependency)**: Sử dụng thư viện macro [`src/prim_sim.v`](src/prim_sim.v) để mô phỏng Gowin PLLVR trên mọi phiên bản ModelSim.
 
-Hệ thống kiểm thử FPGA áp dụng chuẩn **Self-Checking Testbench** (`sim/tb_top_system_v2.v`), tự động đánh giá tính đúng đắn của logic RTL qua các bộ giám sát (Monitors) và bộ xác thực (Checkers) tự động, không phụ thuộc vào việc quan sát thủ công bằng mắt.
+---
 
-```mermaid
-flowchart LR
-    subgraph STIMULUS["Khối Kích Thích (Stimulus Generator)"]
-        RST_STIM["Trigger Reset (5ms)"]
-        BTN1_STIM["Press BTN1 (30ms)"]
-        BTN2_STIM["Press BTN2 (30ms)"]
-        NOISE_STIM["Glitchy Bounces (1-2ms noise)"]
-        SHORT_STIM["Short Pulse (<5ms rejection)"]
-    end
+## 2. 📊 MA TRẬN 25 CHỈ TIÊU KIỂM THỬ TỰ ĐỘNG
 
-    subgraph DUT["Thiết Bị Cần Kiểm Thử (DUT: top_system)"]
-        PLL["Gowin PLL (27M->50M)"]
-        DB["Debouncer 20ms"]
-        FSM["Supervisor FSM"]
-        PWM_CORE["PWM Engine (50kHz sim scale)"]
-        UART_CORE["UART TX 115200 (8N1)"]
-    end
+| Mã Ca Kiểm Thử | Tên Kịch Bản | Hành Vi Kích Hoạt | Cơ Chế Kiểm Tra Tự Động | Tiêu Chuẩn Đạt (Pass Criteria) | Kết Quả Thực Tế |
+| :---: | :--- | :--- | :--- | :--- | :---: |
+| **TC-01** | Khởi động / Reset | Kích hoạt `trigger_reset` | `uart_check_message` | Nhận đúng 11 byte `"MODE: LOW\r\n"` | **PASS (11/11)** |
+| **TC-02** | Đo Duty Mode LOW | Lấy mẫu tín hiệu `led_out` | `measure_pwm_duty` | Tỷ lệ mức cao đạt đúng $25.0\%$ | **PASS (25.0%)** |
+| **TC-03** | Chuyển LOW $\rightarrow$ HIGH | Nhấn Button 1 (`press_btn1`) | `uart_check_message` | Nhận đúng 12 byte `"MODE: HIGH\r\n"` | **PASS (12/12)** |
+| **TC-04** | Đo Duty Mode HIGH | Lấy mẫu tín hiệu `led_out` | `measure_pwm_duty` | Tỷ lệ mức cao đạt đúng $100.0\%$ (Sáng liên tục) | **PASS (100.0%)** |
+| **TC-05** | Chuyển HIGH $\rightarrow$ LOW | Nhấn Button 1 (`press_btn1`) | `uart_check_message` | Nhận đúng 11 byte `"MODE: LOW\r\n"` | **PASS (11/11)** |
+| **TC-06** | Chuyển LOW $\rightarrow$ AUTO | Nhấn Button 2 (`press_btn2`) | `uart_check_message` | Nhận đúng 12 byte `"MODE: AUTO\r\n"` | **PASS (12/12)** |
+| **TC-07** | Đo Chu kỳ 1 Thở AUTO | Theo dõi sườn `breath_dir` | `prove_breath_2s_via_transcript` | Pha giảm $1.000\text{ s}$ + Pha tăng $1.000\text{ s} = 2.000000\text{ s}$ | **PASS (2.000000s)** |
+| **TC-08** | Đo Chu kỳ 2 Thở AUTO | Theo dõi sườn `breath_dir` | `prove_breath_2s_via_transcript` | Pha giảm $1.000\text{ s}$ + Pha tăng $1.000\text{ s} = 2.000000\text{ s}$ | **PASS (2.000000s)** |
+| **TC-09** | Thoát AUTO $\rightarrow$ LOW | Nhấn Button 1 trong AUTO | `uart_check_message` | Nhận đúng 11 byte `"MODE: LOW\r\n"` | **PASS (11/11)** |
+| **TC-10** | Lọc Nhiễu Rung Phím (Bounce) | Kích hoạt `glitchy_press_btn1` | `uart_check_message` + `check_no_uart` | Chỉ phát đúng 1 chuỗi `"MODE: HIGH\r\n"` duy nhất | **PASS (1 lần)** |
+| **TC-11** | Loại Bỏ Xung Phím Ngắn | Nhấn cực ngắn ($5\text{ ms} < 20\text{ ms}$) | `check_no_uart_within` | Không phát UART, giữ nguyên trạng thái | **PASS (Bỏ qua)** |
+| **TC-12** | Reset Khi Đang Ở HIGH | Kích hoạt `trigger_reset` | `uart_check_message` | Quay về LOW và phát `"MODE: LOW\r\n"` | **PASS (11/11)** |
 
-    subgraph CHECKERS["Khối Giám Sát & Tự Động Bắt Lỗi"]
-        UART_DEC["UART Bit-by-Bit Receiver & Baud Rate Error Analyzer"]
-        PWM_MTR["PWM Duty Cycle Averaging Meter"]
-        BREATH_MTR["Breathing Monotonicity Trend Sampler (40 samples)"]
-        GLITCH_CHK["Negative-Pulse Suppression Assertion"]
-    end
+---
 
-    STIMULUS --> DUT --> CHECKERS
+## 3. 🚀 HƯỚNG DẪN THỰC THI MÔ PHỎNG TRÊN MODELSIM SE 10.6d
+
+### Cách 1: Chạy tự động bằng 1 lệnh duy nhất (Khuyên dùng)
+```tcl
+cd d:/FPGA&MCU/FPGA
+do run_sim.do
+```
+
+### Cách 2: Thực thi từng lệnh Tcl
+```tcl
+cd d:/FPGA&MCU/FPGA
+vlib work
+vmap work work
+vlog src/prim_sim.v
+vlog src/gowin_pllvr.v
+vlog src/button_debounce.v
+vlog src/pwm_led_controller.v
+vlog src/uart_tx_string.v
+vlog src/top_system.v
+vlog sim/tb_top_system_v2.v
+vsim -voptargs="+acc" work.tb_top_system_v2
+do wavefinal.do
+run -all
 ```
 
 ---
 
-## 2. Ma Trận Ca Kiểm Thử Tự Động (Test Matrix & Automated Assertions)
+## 4. 📈 BẢNG TÍN HIỆU DẠNG SÓNG WAVEFORM (`wavefinal.do`)
 
-| Mã Ca Kiểm Thử | Kịch Bản Kích Hoạt | Hành Vi Kỹ Thuật Mong Đợi | Bộ Kiểm Tra Tự Động (Checker) | Tiêu Chuẩn Đạt (Pass Criteria) | Kết Quả |
-| :---: | :--- | :--- | :--- | :--- | :---: |
-| **TC-01** | Khởi động / Hardware Reset (`rst_n_in = 0` $\rightarrow 1$) | Hệ thống về Mode LOW; tự động phát chuỗi `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | Nhận đúng 11 byte ASCII, mã hex kết thúc `0x0D 0x0A` | **PASS (11/11 checks)** |
-| **TC-02** | Đo Duty Cycle Mode LOW | Tỷ lệ tích cực mức cao chiếm đúng 25% | `measure_pwm_duty("LOW", ...)` | $\text{Duty} = 25.0\% \pm 0.5\%$ | **PASS** |
-| **TC-03** | Nhấn Button 1 (`btn1_in = 0` trong 30ms) | Chuyển LOW $\rightarrow$ HIGH; phát chuỗi `"MODE: HIGH\r\n"` | `uart_check_message(..., 12)` | Nhận đúng 12 byte ASCII | **PASS (12/12 checks)** |
-| **TC-04** | Đo Duty Cycle Mode HIGH | Tỷ lệ tích cực mức cao chiếm đúng 100% | `measure_pwm_duty("HIGH", ...)` | $\text{Duty} = 100.0\%$ (Sáng liên tục) | **PASS** |
-| **TC-05** | Nhấn tiếp Button 1 | Chuyển HIGH $\rightarrow$ LOW; phát chuỗi `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | Nhận đúng 11 byte ASCII | **PASS (11/11 checks)** |
-| **TC-06** | Nhấn Button 2 (`btn2_in = 0` trong 30ms) | Chuyển sang Mode AUTO; phát chuỗi `"MODE: AUTO\r\n"` | `uart_check_message(..., 12)` | Nhận đúng 12 byte ASCII | **PASS (12/12 checks)** |
-| **TC-07** | Quét hiệu ứng Thở (Mode AUTO) | Duty Cycle tăng dần từ 0% lên 100% rồi giảm dần về 0% | `measure_breath_sample(...)` (40 mẫu) | $\ge 5$ mẫu tăng đơn điệu và $\ge 5$ mẫu giảm đơn điệu | **PASS (40/40 checks)** |
-| **TC-08** | Nhấn Button 1 khi đang ở AUTO | Ép chuyển từ AUTO $\rightarrow$ Mode LOW; phát `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | Nhận đúng 11 byte ASCII | **PASS (11/11 checks)** |
-| **TC-09** | Nhiễu rung phím (Contact Bounce) | Bơm chùm xung nhiễu đảo liên tục 1-2ms trước khi giữ 25ms | `glitchy_press_btn1` + `check_no_uart_within` | Chỉ ghi nhận đúng 1 lần chuyển trạng thái, không bị double-fire | **PASS** |
-| **TC-10** | Nhấn phím cực ngắn (< 5ms) | Phím nhấn dưới ngưỡng 20ms debounce | `short_press_btn1` + `check_no_uart_within` | Bộ lọc dội phím loại bỏ hoàn toàn, không có UART phát ra | **PASS** |
-| **TC-11** | Độ chính xác Baudrate UART | Đo chu kỳ 1 bit UART thực tế | `uart_check_message` bit timer | Bit period $= 8,680.56\text{ ns}$, sai số $\le 0.01\%$ | **PASS (0.006%)** |
-
----
-
-## 3. Hướng Dẫn Chạy Mô Phỏng ModelSim / QuestaSim
-
-### 3.1. Các bước nạp tệp kịch bản mô phỏng
-1. Khởi động phần mềm **ModelSim** (hoặc QuestaSim).
-2. Tạo thư mục làm việc mới và đổi đường dẫn làm việc về thư mục `FPGA/`:
-   ```tcl
-   cd d:/FPGA&MCU/FPGA
-   ```
-3. Tạo thư viện làm việc:
-   ```tcl
-   vlib work
-   vmap work work
-   ```
-4. Biên dịch toàn bộ mã nguồn RTL và Testbench:
-   ```tcl
-   vlog src/button_debounce.v
-   vlog src/pwm_led_controller.v
-   vlog src/uart_tx_string.v
-   vlog src/gowin_pllvr.v
-   vlog src/top_system.v
-   vlog sim/tb_top_system_v2.v
-   ```
-5. Khởi chạy mô phỏng:
-   ```tcl
-   vsim -voptargs=+acc work.tb_top_system_v2
-   ```
-6. Tải cấu hình dạng sóng và thước đo màu tự động:
-   ```tcl
-   do sim/wavefinal.do
-   ```
-7. Chạy mô phỏng toàn phần:
-   ```tcl
-   run -all
-   ```
-
-### 3.2. Đọc Thước Đo Dạng Sóng (Waveform Markers)
-
-Tệp [`sim/wavefinal.do`](sim/wavefinal.do) đã được cấu hình sẵn các nhóm màu trực quan:
-- **Tín hiệu Nút nhấn (`btn1_in`, `btn2_in`)**: Hiển thị màu trắng.
-- **Xung lọc phím (`btn1_pulse`, `btn2_pulse`)**: Hiển thị màu Hồng / Xanh Olive (chỉ nháy 1 xung 20ns duy nhất).
-- **Xung PWM LED (`led_out`)**: Hiển thị màu Đỏ (Đo chu kỳ bằng Cursor $\approx 20\mu\text{s}$ ở chế độ mô phỏng tăng tốc).
-- **Ngõ ra UART (`uart_tx`)**: Hiển thị màu Vàng kim (Đo độ rộng 1 bit $\approx 8.68\mu\text{s}$).
-- **Trạng thái FSM (`current_mode`)**: Hiển thị giá trị nguyên không dấu (`0`: LOW, `1`: HIGH, `2`: AUTO).
+| Tín Hiệu Trên Wave | Màu Sắc | Định Dạng (Radix) | Vị Trí Cursor Đo Thời Gian | Ý Nghĩa Kỹ Thuật |
+| :--- | :---: | :---: | :---: | :--- |
+| `btn1_in` | Xanh Lá | Binary | — | Tín hiệu nút bấm 1 từ chân vật lý (Active-LOW). |
+| `btn1_pulse` | **Hồng (Pink)** | Binary | — | Xung 1-clock $20\text{ ns}$ sau khi lọc dội $20\text{ ms}$. |
+| `btn2_in` | Xanh Lá | Binary | — | Tín hiệu nút bấm 2 chuyển AUTO (Active-LOW). |
+| `btn2_pulse` | **Xanh Oliu** | Binary | — | Xung 1-clock $20\text{ ns}$ chuyển sang chế độ Thở. |
+| `led_out` | **Đỏ (Red)** | Binary | — | Ngõ ra xung PWM điều khiển LED2 (Active-HIGH). |
+| `uart_tx` | **Vàng (Gold)** | Binary | — | Chuỗi bit UART TX $115,200\text{ bps}$ 8N1. |
+| `u_uart/bit_cnt` | **Tím** | Unsigned | — | Đếm vị trí bit UART ($0$: Start, $1..8$: Data, $9$: Stop). |
+| `current_mode` | Mặc định | Unsigned | — | Chế độ FSM: `0` (LOW 25%), `1` (HIGH 100%), `2` (AUTO). |
+| `u_pwm/breath_duty` | Mặc định | Unsigned | — | Độ rộng nấc thở biến thiên $0 \leftrightarrow 50,000$. |
+| `u_pwm/breath_dir` | Mặc định | Binary | **Cursor 5, 6, 7, 8** | Cờ đảo chiều thở (Đo chính xác chu kỳ $2.000\text{ s}$). |
 
 ---
 
-## 4. Checklist Kiểm Tra Mạch Thật Phần Cứng (Kiwi Nano 4K Board)
+## 5. 📋 LOG TRANSCRIPT BÁO CÁO THỰC NGHIỆM MODELSIM
 
-| Bước | Hành Động Trên Bo | Hiện Tượng Quan Sát Trên LED D2 | Dữ Liệu Thu Trên Cổng Serial (115200 8N1) | Đánh Giá |
-| :---: | :--- | :--- | :--- | :---: |
-| 1 | Cắm nguồn / Bấm nút Reset | LED2 sáng mờ đều (Duty 25%, 1kHz) | Xuất hiện dòng: `MODE: LOW` kèm xuống dòng | [ ] Đạt |
-| 2 | Bấm Nút 1 (Pin 14) lần 1 | LED2 sáng rực cực đại (Duty 100%) | Xuất hiện dòng: `MODE: HIGH` | [ ] Đạt |
-| 3 | Bấm Nút 1 (Pin 14) lần 2 | LED2 giảm độ sáng về 25% | Xuất hiện dòng: `MODE: LOW` | [ ] Đạt |
-| 4 | Bấm Nút 2 (Pin 15) | LED2 thở sáng dần $\rightarrow$ tối dần trong đúng 2.0s | Xuất hiện dòng: `MODE: AUTO` | [ ] Đạt |
-| 5 | Bấm Nút 1 khi đang thở | LED2 lập tức ngừng thở, giữ sáng ở 25% | Xuất hiện dòng: `MODE: LOW` | [ ] Đạt |
-| 6 | Nhấn giữ phím lâu | Không bị gửi lặp lại nhiều lần | Chỉ gửi đúng 1 chuỗi ký tự duy nhất | [ ] Đạt |
-
----
-
-# 🇬🇧 FPGA VERIFICATION & TESTING SPECIFICATION (ENGLISH)
-
-## Summary of Test Results
-The automated self-checking testbench (`sim/tb_top_system_v2.v`) executes 11 distinct test cases verifying:
-- Power-on reset synchronization and boot transmission of `"MODE: LOW\r\n"`.
-- State transitions (LOW $\leftrightarrow$ HIGH, AUTO $\rightarrow$ LOW) and corresponding UART string transmissions.
-- Hardware key debouncing (20ms noise rejection and single-clock pulse generation).
-- Negative pulse rejection for contact glitches shorter than 20ms.
-- High-precision UART baud rate verification ($0.006\%$ timing error).
-- Linear PWM duty cycle scaling (25%, 100%, and 2.0s monotonic breathing cycle).
+```text
+# [35000000 ns] Nhan Button 1
+#   12 byte, 0 loi
+#   bit period ~8680.556 ns, baud ~115200.0 bps, sai so 0.000%
+# [75000000 ns] duty HIGH = 100.00%
+# ========================================
+# CHUNG MINH LED THO DUNG 2.0s (qua transcript)
+# ========================================
+# Chu ky 1: pha giam=1.000000s, pha tang=1.000000s, TONG=2.000000s (ky vong 2.000000s)
+#   -> OK: chu ky 1 dat yeu cau 2.0s
+# Chu ky 2: pha giam=1.000000s, pha tang=1.000000s, TONG=2.000000s (ky vong 2.000000s)
+#   -> OK: chu ky 2 dat yeu cau 2.0s
+# ========================================
+# Tong: 25 check, 0 loi
+```

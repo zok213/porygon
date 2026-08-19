@@ -23,10 +23,9 @@ module tb_top_system_v2();
         .uart_tx  (uart_tx)
     );
 
-    // Scale PWM_FREQ len 50kHz chi trong mo phong -> chu ky tho con 40ms
-    // thay vi 2.0s that, de test nhanh. STEP_VAL van la so nguyen sach
-    // (ARR_MAX=1000, STEP_VAL=1) nen khong lam sai logic breathing.
-    defparam uut.u_pwm.PWM_FREQ = 50_000;
+    // KHONG override PWM_FREQ nua. Dung dung gia tri THAT (1000 Hz)
+    // duoc top_system.v truyen xuong pwm_led_controller, de chu ky
+    // tho AUTO chay dung 2.0s that, lam bang chung chinh xac cho bao cao.
 
     initial clk_in = 0;
     always #18.518 clk_in = ~clk_in; // 27MHz
@@ -169,28 +168,46 @@ module tb_top_system_v2();
         end
     endtask
 
-    // Theo doi xu huong tang/giam cua duty trong lan quet breathing
-    real breath_prev_duty = -1;
-    integer breath_rising = 0;
-    integer breath_falling = 0;
-
-    task automatic measure_breath_sample(input integer window_ns, input integer step_ns);
-        integer n_samples, n_high, i;
-        real duty_pct;
+    // Chung minh chu ky tho AUTO dung 2.0s that bang canh breath_dir:
+    // breath_dir dao trang thai dung 2 lan moi chu ky (0->1 tai dinh,
+    // 1->0 tai day). Khoang cach giua 2 lan posedge lien tiep = dung
+    // 1 chu ky tho day du (1.0s pha giam + 1.0s pha tang).
+    task automatic prove_breath_2s_via_transcript(input integer n_cycles);
+        real t_top, t_bottom, t_top_next;
+        real rise_s, fall_s, period_s;
+        integer i;
         begin
-            n_samples = window_ns / step_ns;
-            n_high = 0;
-            for (i = 0; i < n_samples; i = i + 1) begin
-                #(step_ns);
-                if (led_out) n_high = n_high + 1;
+            $display("========================================");
+            $display("CHUNG MINH LED THO DUNG 2.0s (qua transcript)");
+            $display("========================================");
+
+            @(posedge uut.u_pwm.breath_dir); // moc dinh lan dau
+            t_top = $realtime;
+
+            for (i = 0; i < n_cycles; i = i + 1) begin
+                @(negedge uut.u_pwm.breath_dir); // xuong day
+                t_bottom = $realtime;
+                @(posedge uut.u_pwm.breath_dir); // len dinh ke tiep
+                t_top_next = $realtime;
+
+                fall_s   = (t_bottom   - t_top)     / 1.0e9;
+                rise_s   = (t_top_next - t_bottom)  / 1.0e9;
+                period_s = (t_top_next - t_top)     / 1.0e9;
+
+                $display("Chu ky %0d: pha giam=%.6fs, pha tang=%.6fs, TONG=%.6fs (ky vong 2.000000s)",
+                          i + 1, fall_s, rise_s, period_s);
+
+                total_checks = total_checks + 1;
+                if (period_s < 1.9995 || period_s > 2.0005) begin
+                    total_errors = total_errors + 1;
+                    $display("  -> LOI: chu ky %0d lech qua nguong cho phep +-0.5ms", i + 1);
+                end else begin
+                    $display("  -> OK: chu ky %0d dat yeu cau 2.0s", i + 1);
+                end
+
+                t_top = t_top_next;
             end
-            duty_pct = (n_high * 100.0) / n_samples;
-            $display("[%0t ns] breath duty = %.2f%%", $time, duty_pct);
-            if (breath_prev_duty >= 0) begin
-                if (duty_pct > breath_prev_duty) breath_rising = breath_rising + 1;
-                else if (duty_pct < breath_prev_duty) breath_falling = breath_falling + 1;
-            end
-            breath_prev_duty = duty_pct;
+            $display("========================================");
         end
     endtask
 
@@ -203,21 +220,21 @@ module tb_top_system_v2();
             trigger_reset();
             uart_check_message({"MODE: LOW", 8'h0D, 8'h0A}, 11);
         join
-        measure_pwm_duty("LOW", 20_000_000, 10_000);
+        measure_pwm_duty("LOW", 20_000_000, 200);
 
         // LOW -> HIGH
         fork
             press_btn1();
             uart_check_message({"MODE: HIGH", 8'h0D, 8'h0A}, 12);
         join
-        measure_pwm_duty("HIGH", 20_000_000, 10_000);
+        measure_pwm_duty("HIGH", 20_000_000, 200);
 
         // HIGH -> LOW
         fork
             press_btn1();
             uart_check_message({"MODE: LOW", 8'h0D, 8'h0A}, 11);
         join
-        measure_pwm_duty("LOW", 20_000_000, 10_000);
+        measure_pwm_duty("LOW", 20_000_000, 200);
 
         // LOW -> AUTO
         fork
@@ -225,21 +242,16 @@ module tb_top_system_v2();
             uart_check_message({"MODE: AUTO", 8'h0D, 8'h0A}, 12);
         join
 
-        // Quet 1 chu ky tho (~40ms sau khi da scale PWM_FREQ), 40 mau 1ms/mau
-        repeat (40) measure_breath_sample(1_000_000, 10_000);
-        $display("breath: %0d mau tang, %0d mau giam", breath_rising, breath_falling);
-        if (breath_rising < 5 || breath_falling < 5) begin
-            total_errors = total_errors + 1;
-            $display("loi: duty khong the hien ro xu huong tang/giam cua hieu ung tho");
-        end
-        total_checks = total_checks + 1;
+        // Do 2 chu ky tho lien tiep, dung PWM_FREQ that -> moi chu ky ~2.0s
+        // (tong ~4s mo phong cho doan nay, khong dang ke voi thoi gian chay may that)
+        prove_breath_2s_via_transcript(2);
 
         // AUTO -> LOW
         fork
             press_btn1();
             uart_check_message({"MODE: LOW", 8'h0D, 8'h0A}, 11);
         join
-        measure_pwm_duty("LOW", 20_000_000, 10_000);
+        measure_pwm_duty("LOW", 20_000_000, 200);
 
         // Bounce test: rung phim chi duoc tinh 1 lan
         fork
