@@ -9,10 +9,10 @@ The implementation strictly follows **Defensive Digital IC Design** best practic
 - **Edge-Triggered Hardware Debouncing**: Complete elimination of mechanical switch contact chatter via a $20\text{ ms}$ integration counter ($1,000,000$ clock cycles @ 50MHz) with deterministic **single-clock pulse output ($20\text{ ns}$)**.
 - **Flicker-Free 2.0s Breathing PWM Engine**: $1,000\text{ Hz}$ carrier frequency (`ARR_MAX = 50_000`), divided into 2,000 discrete brightness steps ($1,000$ up $+ 1,000$ down) yielding an exact **$2.000\text{ second}$** period.
 - **Latched Telemetry UART Engine (115200 bps)**: High-accuracy baud divisor `BAUD_DIV = 434` ($0.0064\%$ timing error $\ll \pm 2.0\%$) with `mode_latched` protection against mid-transmission packet corruption.
-- **Zero-Dependency ModelSim Simulation**: Includes self-contained Gowin primitive model library ([`FPGA/src/prim_sim.v`](FPGA/src/prim_sim.v)), single-command execution script [`FPGA/run_sim.do`](FPGA/run_sim.do), and automated testbench `tb_top_system_v2` passing **25/25 automated assertions (0 errors)** with formal mathematical proof of the $2.000000\text{ s}$ breathing cycle.
+- **Zero-Dependency ModelSim Simulation**: Includes self-contained Gowin primitive model library ([`FPGA/src/prim_sim.v`](FPGA/src/prim_sim.v)), single-command execution script [`FPGA/sim/run_sim.do`](FPGA/sim/run_sim.do), and automated testbench `tb_top_system_v2` passing **25/25 automated assertions (0 errors)** with formal mathematical proof of the $2.000000\text{ s}$ breathing cycle.
 
 > 📖 **Comprehensive Verification Guides**:
-> - 🌊 [ModelSim FPGA Simulation Guide](FPGA/README_MODELSIM_SIMULATION.md)
+> - 🌊 [ModelSim FPGA Simulation Guide](FPGA/sim/README_MODELSIM_SIMULATION.md)
 > - 🐞 [Keil µVision5 MCU Debug Simulation Guide](MCU_Contest_2026/README_KEIL_DEBUG_SIMULATION.md)
 > - 🔍 [Deep-Dive Analysis of 6 Hardware Bugs](FPGA/ISSUE_ANALYSIS_DEEP_DIVE.md)
 > - 🧪 [Automated Verification Matrix & Waveform Guide](FPGA/TESTING.md)
@@ -46,38 +46,44 @@ porygon/
 ├── README.md                                             # Master Technical Specification (Bilingual VI & EN)
 ├── README_VI.md                                          # Vietnamese Master Specification
 ├── README_EN.md                                          # English Master Specification
-├── README_MODELSIM_SIMULATION.md                         # ModelSim SE 10.6d Simulation Guide
-├── README_KEIL_DEBUG_SIMULATION.md                       # Keil µVision5 Watch 1 Debug Simulation Guide
-├── README_SIMULATION_SCALING.md                          # Simulation Time Acceleration Report
 ├── SECURITY.md                                           # Security Policy & Hardware IP Protection
 ├── SETUP.md                                              # Toolchain setup instructions (Gowin & ModelSim)
-├── ĐỀ THI FGPA 2026.docx.pdf                             # Official FPGA Contest Specification
-├── ĐỀ THI MCU 2026.pdf                                   # Official MCU Contest Specification
-├── Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v (1).pdf # Gowin FPGA Reference Book
-└── FPGA/                                                 # FPGA Workspace Directory
-    ├── .gitignore                                        # Gowin & ModelSim build output exclusions
-    ├── README.md                                         # FPGA Subsystem Specification & Rebuild Guide
-    ├── README_MODELSIM_SIMULATION.md                     # ModelSim Quick Start Guide
-    ├── TESTING.md                                        # Verification Suite & ModelSim Guide (25 Checks)
-    ├── ISSUE_ANALYSIS_DEEP_DIVE.md                       # Comprehensive Analysis of 6 Hardware Bugs
-    ├── README_SIMULATION_SCALING.md                      # Simulation Time Acceleration Report
-    ├── pwm11.gprj                                        # Gowin EDA Project Configuration
-    ├── run_sim.do                                        # One-click automated ModelSim execution script
-    ├── wavefinal.do                                      # ModelSim Waveform & Cursor Configuration
-    ├── constr/pwm11.cst                                  # Physical Pin Constraints (Kiwi Nano 4K)
-    ├── src/                                              # Synthesizable RTL Modules
-    │   ├── top_system.v                                  # Top Integration & Supervisor FSM
-    │   ├── button_debounce.v                             # 20ms Debouncer & Single-Clock Pulse Generator
-    │   ├── pwm_led_controller.v                          # 1kHz PWM Controller (LOW, HIGH, AUTO 2.0s)
-    │   ├── uart_tx_string.v                              # 115200 8N1 UART Serializer
-    │   ├── gowin_pllvr.v                                 # Gowin PLLVR Wrapper (27MHz -> 50MHz)
-    │   ├── prim_sim.v                                    # Gowin Simulation Primitive Model Library
-    │   └── ip/gowin_pllvr/                               # IP Generator Core Configuration
-    ├── sim/                                              # Verification Testbenches
-    │   ├── tb_top_system_v2.v                            # Automated System Testbench (25 Checks, 0 Errors)
-    │   ├── tb_uart_tx.v                                  # UART Timing Testbench
-    │   └── wavefinal.do                                  # ModelSim Waveform & Cursor Script
-    └── docs/                                             # Technical Documentation Archive
+├── docs/                                                 # Project-wide Documentation Archive
+│   ├── ĐỀ THI FGPA 2026.docx.pdf                         # Official FPGA Contest Specification
+│   ├── ĐỀ THI MCU 2026.pdf                               # Official MCU Contest Specification
+│   ├── Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v (1).pdf # Gowin FPGA Reference Book
+│   └── Thuyết Minh PBL3 Chốt 1705.pdf                   # PBL3 Graduation Project Report
+├── FPGA/                                                 # FPGA Workspace Directory
+│   ├── .gitignore                                        # Gowin & ModelSim build output exclusions
+│   ├── README.md                                         # FPGA Subsystem Specification & Rebuild Guide
+│   ├── TESTING.md                                        # Verification Suite & ModelSim Guide (25 Checks)
+│   ├── ISSUE_ANALYSIS_DEEP_DIVE.md                       # Comprehensive Analysis of 6 Hardware Bugs
+│   ├── pwm11.gprj                                        # Gowin EDA Project Configuration
+│   ├── constr/pwm11.cst                                  # Physical Pin Constraints (Kiwi Nano 4K)
+│   ├── src/                                              # Synthesizable RTL Modules
+│   │   ├── top_system.v                                  # Top Integration & Supervisor FSM
+│   │   ├── button_debounce.v                             # 20ms Debouncer & Single-Clock Pulse Generator
+│   │   ├── pwm_led_controller.v                          # 1kHz PWM Controller (LOW, HIGH, AUTO 2.0s)
+│   │   ├── uart_tx_string.v                              # 115200 8N1 UART Serializer
+│   │   ├── gowin_pllvr.v                                 # Gowin PLLVR Wrapper (27MHz -> 50MHz)
+│   │   ├── prim_sim.v                                    # Gowin Simulation Primitive Model Library
+│   │   └── ip/gowin_pllvr/                               # IP Generator Core Configuration
+│   ├── sim/                                              # Verification Testbenches & Simulation Suite
+│   │   ├── README_MODELSIM_SIMULATION.md                 # ModelSim SE 10.6d Simulation Guide
+│   │   ├── README_SIMULATION_SCALING.md                  # Simulation Time Acceleration Report
+│   │   ├── run_sim.do                                    # One-click automated ModelSim execution script
+│   │   ├── wavefinal.do                                  # ModelSim Waveform & Cursor Script
+│   │   ├── tb_top_system_v2.v                            # Automated System Testbench (25 Checks, 0 Errors)
+│   │   └── tb_uart_tx.v                                  # UART Timing Testbench
+│   └── docs/                                             # Technical Documentation Archive
+│       └── ĐỀ THI FGPA 2026.docx.pdf                     # Official FPGA Contest Specification
+└── MCU_Contest_2026/                                     # MCU Workspace Directory (SN32F407)
+    ├── README.md                                         # MCU Firmware Architecture Specification
+    ├── README_KEIL_DEBUG_SIMULATION.md                   # Keil µVision5 Watch 1 Debug Simulation Guide
+    ├── ISSUE_ANALYSIS_DEEP_DIVE.md                       # Comprehensive Analysis of 6 MCU Bugs
+    ├── docs/                                             # MCU Contest Documentation Archive
+    │   └── ĐỀ THI MCU 2026.pdf                           # Official MCU Contest Specification
+    └── src/                                              # Synthesizable C & Assembly Source Files
 ```
 
 ---
@@ -232,13 +238,13 @@ sequenceDiagram
 ---
 
 ## 10. Zero-Dependency ModelSim Simulation Quick Start
-*(Detailed guide at [`FPGA/README_MODELSIM_SIMULATION.md`](FPGA/README_MODELSIM_SIMULATION.md))*
+*(Detailed guide at [`FPGA/sim/README_MODELSIM_SIMULATION.md`](FPGA/sim/README_MODELSIM_SIMULATION.md))*
 
 The project embeds the official Gowin primitive simulation models ([`FPGA/src/prim_sim.v`](FPGA/src/prim_sim.v)), allowing instant simulation in ModelSim without requiring Gowin EDA installation:
 
 ### 🚀 Single-Command Automated Execution
 1. Open **ModelSim SE 10.6d**.
-2. Select **`File` $\rightarrow$ `Change Directory...`** $\rightarrow$ Navigate to `FPGA/`.
+2. Select **`File` $\rightarrow$ `Change Directory...`** $\rightarrow$ Navigate to `FPGA/sim/`.
 3. In the **Transcript** window, enter:
    ```tcl
    do run_sim.do

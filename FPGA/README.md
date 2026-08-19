@@ -27,55 +27,56 @@
 
 ```
 porygon/
-├── .github/
-│   ├── ISSUE_TEMPLATE/
-│   │   ├── bug_report.md                                 # Mẫu báo lỗi phần cứng & phần mềm FPGA/MCU
-│   │   └── feature_request.md                            # Mẫu đề xuất nâng cấp tính năng
-│   ├── pull_request_template.md                          # Mẫu kiểm tra và quy trình review Pull Request
-│   └── workflows/
-│       └── ci.yml                                        # Pipeline CI/CD tự động phân tích tĩnh & kiểm thử
+├── .github/                                              # CI/CD Workflows & Issue Templates
+│   ├── ISSUE_TEMPLATE/                                   # Mẫu báo lỗi & đề xuất tính năng
+│   ├── pull_request_template.md                          # Mẫu kiểm tra review Pull Request
+│   └── workflows/ci.yml                                  # Pipeline CI/CD tự động kiểm thử
 ├── .gitignore                                            # Quy tắc loại bỏ tệp rác Gowin EDA & ModelSim
-├── CODE_OF_CONDUCT.md                                    # Quy tắc ứng xử đóng góp mã nguồn
+├── CODE_OF_CONDUCT.md                                    # Quy tắc ứng xử cộng đồng mã nguồn
 ├── CONTRIBUTING.md                                       # Quy định quản lý nhánh Git Flow & chuẩn commit
 ├── LICENSE                                               # Giấy phép bản quyền mã nguồn mở MIT
-├── README.md                                             # Master Thuyết minh Kiến trúc Hệ thống (Song ngữ VI & EN đầy đủ)
+├── README.md                                             # Master Thuyết minh Hệ thống (Song ngữ VI & EN đầy đủ)
 ├── README_VI.md                                          # Bản Thuyết minh Kiến trúc Kỹ thuật Tiếng Việt chuẩn hóa
 ├── README_EN.md                                          # Master System Architectural Specification (English)
-├── README_MODELSIM_SIMULATION.md                         # Hướng dẫn chi tiết chạy mô phỏng ModelSim SE 10.6d
-├── README_KEIL_DEBUG_SIMULATION.md                       # Hướng dẫn chi tiết cấu hình Debug Watch 1 trên Keil µVision5
-├── README_SIMULATION_SCALING.md                          # Thuyết minh kỹ thuật tỷ lệ thời gian mô phỏng tăng tốc
 ├── SECURITY.md                                           # Chính sách bảo mật & bảo vệ tài nguyên phần cứng
 ├── SETUP.md                                              # Hướng dẫn thiết lập môi trường Gowin EDA & ModelSim
-├── ĐỀ THI FGPA 2026.docx.pdf                             # Bản gốc Đề thi Khối FPGA Đà Nẵng 2026
-├── ĐỀ THI MCU 2026.pdf                                   # Bản gốc Đề thi Khối Microcontroller Đà Nẵng 2026
-├── Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v (1).pdf # Tài liệu lập trình Gowin FPGA tiếng Việt
-└── FPGA/                                                 # Thư mục Không gian làm việc Dự án Gowin EDA
-    ├── .gitignore                                        # Loại bỏ tệp đầu ra tổng hợp impl/ & mô phỏng work/
-    ├── README.md                                         # Báo cáo kỹ thuật chi tiết thư mục FPGA & Hướng dẫn Rebuild
-    ├── README_MODELSIM_SIMULATION.md                     # Hướng dẫn chạy mô phỏng ModelSim nhanh bằng 1 lệnh
-    ├── TESTING.md                                        # Ma trận kiểm thử tự động 25 kịch bản & Hướng dẫn ModelSim
-    ├── ISSUE_ANALYSIS_DEEP_DIVE.md                       # Báo cáo phân tích chuyên sâu & thực chứng 6 lỗi FPGA
-    ├── README_SIMULATION_SCALING.md                      # Thuyết minh kỹ thuật tỷ lệ thời gian mô phỏng tăng tốc
-    ├── pwm11.gprj                                        # Tệp cấu hình dự án Gowin EDA (GW1NSR-4C / Kiwi Nano 4K)
-    ├── run_sim.do                                        # Kịch bản Tcl chạy tự động toàn bộ mô phỏng trên ModelSim
-    ├── wavefinal.do                                      # Cấu hình hiển thị dạng sóng & 5 thước đo thời gian
-    ├── constr/                                           # Thư mục chứa tệp ràng buộc vật lý chân phần cứng
-    │   └── pwm11.cst                                     # Ràng buộc chân FPGA (Clock, Reset, BTN1/2, LED, UART TX)
-    ├── src/                                              # Mã nguồn Verilog RTL tổng hợp được (Synthesizable RTL)
-    │   ├── top_system.v                                  # Module cấp cao nhất: Đồng bộ Reset, Quản lý FSM trung tâm
-    │   ├── button_debounce.v                             # Mạch lọc dội phím 2 tầng D-FF + Bộ đếm 20ms + Bắt sườn xung
-    │   ├── pwm_led_controller.v                          # Bộ điều chế PWM 1kHz (LOW 25%, HIGH 100%, AUTO Thở 2.0s)
-    │   ├── uart_tx_string.v                              # Bộ truyền chuỗi UART 115200 8N1 có chốt an toàn trạng thái
-    │   ├── gowin_pllvr.v                                 # Top wrapper IP Core Gowin PLLVR (27MHz -> 50MHz)
-    │   ├── prim_sim.v                                    # Thư viện mô phỏng linh kiện Gowin (Zero-Dependency)
-    │   └── ip/gowin_pllvr/                               # Tệp cấu hình gốc IP Generator (.ipc, .mod, .v, _tmp.v)
-    ├── sim/                                              # Thư mục kịch bản mô phỏng kiểm thử (Verification Suite)
-    │   ├── tb_top_system_v2.v                            # Testbench tự động kiểm tra toàn diện 25 chỉ tiêu (0 lỗi)
-    │   ├── tb_uart_tx.v                                  # Testbench đo thời gian phát chuỗi khối UART
-    │   └── wavefinal.do                                  # Kịch bản dạng sóng & Thước đo Cursor tự động trên ModelSim
-    └── docs/                                             # Thư mục tài liệu đề bài và thuyết minh cuộc thi
-        ├── ĐỀ THI FGPA 2026.docx.pdf                     # Bản sao đề thi chính thức Khối FPGA Đà Nẵng 2026
-        └── README_SIMULATION_SCALING.md                  # Báo cáo kỹ thuật tỷ lệ thời gian mô phỏng
+├── docs/                                                 # Thư mục tài liệu chung toàn dự án
+│   ├── ĐỀ THI FGPA 2026.docx.pdf                         # Bản gốc Đề thi Khối FPGA Đà Nẵng 2026
+│   ├── ĐỀ THI MCU 2026.pdf                               # Bản gốc Đề thi Khối Microcontroller Đà Nẵng 2026
+│   ├── Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v (1).pdf # Tài liệu lập trình Gowin FPGA tiếng Việt
+│   └── Thuyết Minh PBL3 Chốt 1705.pdf                   # Báo cáo thuyết minh đề tài PBL3
+├── FPGA/                                                 # Thư mục Không gian làm việc Dự án Gowin EDA
+│   ├── .gitignore                                        # Loại bỏ tệp đầu ra tổng hợp impl/ & mô phỏng work/
+│   ├── README.md                                         # Báo cáo kỹ thuật chi tiết thư mục FPGA & Hướng dẫn Rebuild
+│   ├── TESTING.md                                        # Ma trận kiểm thử tự động 25 kịch bản & Hướng dẫn ModelSim
+│   ├── ISSUE_ANALYSIS_DEEP_DIVE.md                       # Báo cáo phân tích chuyên sâu & thực chứng 6 lỗi FPGA
+│   ├── pwm11.gprj                                        # Tệp cấu hình dự án Gowin EDA (GW1NSR-4C / Kiwi Nano 4K)
+│   ├── constr/                                           # Thư mục chứa tệp ràng buộc vật lý chân phần cứng
+│   │   └── pwm11.cst                                     # Ràng buộc chân FPGA (Clock, Reset, BTN1/2, LED, UART TX)
+│   ├── src/                                              # Mã nguồn Verilog RTL tổng hợp được (Synthesizable RTL)
+│   │   ├── top_system.v                                  # Module cấp cao nhất: Đồng bộ Reset, Quản lý FSM trung tâm
+│   │   ├── button_debounce.v                             # Mạch lọc dội phím 2 tầng D-FF + Bộ đếm 20ms + Bắt sườn xung
+│   │   ├── pwm_led_controller.v                          # Bộ điều chế PWM 1kHz (LOW 25%, HIGH 100%, AUTO Thở 2.0s)
+│   │   ├── uart_tx_string.v                              # Bộ truyền chuỗi UART 115200 8N1 có chốt an toàn trạng thái
+│   │   ├── gowin_pllvr.v                                 # Top wrapper IP Core Gowin PLLVR (27MHz -> 50MHz)
+│   │   ├── prim_sim.v                                    # Thư viện mô phỏng linh kiện Gowin (Zero-Dependency)
+│   │   └── ip/gowin_pllvr/                               # Tệp cấu hình gốc IP Generator (.ipc, .mod, .v, _tmp.v)
+│   ├── sim/                                              # Thư mục kịch bản mô phỏng kiểm thử (Verification Suite)
+│   │   ├── README_MODELSIM_SIMULATION.md                 # Hướng dẫn chi tiết chạy mô phỏng ModelSim SE 10.6d
+│   │   ├── README_SIMULATION_SCALING.md                  # Thuyết minh kỹ thuật tỷ lệ thời gian mô phỏng tăng tốc
+│   │   ├── run_sim.do                                    # Kịch bản Tcl chạy tự động toàn bộ mô phỏng trên ModelSim
+│   │   ├── wavefinal.do                                  # Cấu hình hiển thị dạng sóng & 5 thước đo thời gian
+│   │   ├── tb_top_system_v2.v                            # Testbench tự động kiểm tra toàn diện 25 chỉ tiêu (0 lỗi)
+│   │   └── tb_uart_tx.v                                  # Testbench đo thời gian phát chuỗi khối UART
+│   └── docs/                                             # Thư mục tài liệu đề bài khối FPGA
+│       └── ĐỀ THI FGPA 2026.docx.pdf                     # Bản sao đề thi chính thức Khối FPGA Đà Nẵng 2026
+└── MCU_Contest_2026/                                     # Thư mục Không gian làm việc Dự án Vi điều khiển SN32F407
+    ├── README.md                                         # Báo cáo kiến trúc hệ thống Firmware MCU
+    ├── README_KEIL_DEBUG_SIMULATION.md                   # Hướng dẫn chi tiết cấu hình Debug Watch 1 trên Keil µVision5
+    ├── ISSUE_ANALYSIS_DEEP_DIVE.md                       # Báo cáo phân tích chuyên sâu 6 lỗi vi điều khiển
+    ├── docs/                                             # Thư mục tài liệu đề bài khối MCU
+    │   └── ĐỀ THI MCU 2026.pdf                           # Bản sao đề thi chính thức Khối MCU Đà Nẵng 2026
+    └── src/                                              # Mã nguồn C/Assembly cho MCU SN32F407
 ```
 
 ---
@@ -232,13 +233,13 @@ sequenceDiagram
 ---
 
 ## 10. Hướng Dẫn Mô Phỏng ModelSim Tự Chứa (Zero-Dependency Quick Start)
-*(Chi tiết tại [`README_MODELSIM_SIMULATION.md`](README_MODELSIM_SIMULATION.md))*
+*(Chi tiết tại [`sim/README_MODELSIM_SIMULATION.md`](sim/README_MODELSIM_SIMULATION.md))*
 
 Dự án tích hợp sẵn thư viện linh kiện Gowin [`src/prim_sim.v`](src/prim_sim.v) giúp chạy mô phỏng trơn tru trên mọi máy tính mà không cần cài đặt Gowin EDA:
 
 ### 🚀 Chạy Tự Động Bằng 1 Lệnh Tcl Duy Nhất
 1. Mở phần mềm **ModelSim SE 10.6d**.
-2. Chọn menu **`File` $\rightarrow$ `Change Directory...`** $\rightarrow$ Trỏ đến thư mục `FPGA/`.
+2. Chọn menu **`File` $\rightarrow$ `Change Directory...`** $\rightarrow$ Trỏ đến thư mục `sim/`.
 3. Trong cửa sổ **Transcript**, gõ lệnh sau và bấm **Enter**:
    ```tcl
    do run_sim.do
@@ -386,38 +387,44 @@ porygon/
 ├── README.md                                             # Master Technical Specification (Bilingual VI & EN)
 ├── README_VI.md                                          # Vietnamese Master Specification
 ├── README_EN.md                                          # English Master Specification
-├── README_MODELSIM_SIMULATION.md                         # ModelSim SE 10.6d Simulation Guide
-├── README_KEIL_DEBUG_SIMULATION.md                       # Keil µVision5 Watch 1 Debug Simulation Guide
-├── README_SIMULATION_SCALING.md                          # Simulation Time Acceleration Report
 ├── SECURITY.md                                           # Security Policy & Hardware IP Protection
 ├── SETUP.md                                              # Toolchain setup instructions (Gowin & ModelSim)
-├── ĐỀ THI FGPA 2026.docx.pdf                             # Official FPGA Contest Specification
-├── ĐỀ THI MCU 2026.pdf                                   # Official MCU Contest Specification
-├── Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v (1).pdf # Gowin FPGA Reference Book
-└── FPGA/                                                 # FPGA Workspace Directory
-    ├── .gitignore                                        # Gowin & ModelSim build output exclusions
-    ├── README.md                                         # FPGA Subsystem Specification & Rebuild Guide
-    ├── README_MODELSIM_SIMULATION.md                     # ModelSim Quick Start Guide
-    ├── TESTING.md                                        # Verification Suite & ModelSim Guide (25 Checks)
-    ├── ISSUE_ANALYSIS_DEEP_DIVE.md                       # Comprehensive Analysis of 6 Hardware Bugs
-    ├── README_SIMULATION_SCALING.md                      # Simulation Time Acceleration Report
-    ├── pwm11.gprj                                        # Gowin EDA Project Configuration
-    ├── run_sim.do                                        # One-click automated ModelSim execution script
-    ├── wavefinal.do                                      # ModelSim Waveform & Cursor Configuration
-    ├── constr/pwm11.cst                                  # Physical Pin Constraints (Kiwi Nano 4K)
-    ├── src/                                              # Synthesizable RTL Modules
-    │   ├── top_system.v                                  # Top Integration & Supervisor FSM
-    │   ├── button_debounce.v                             # 20ms Debouncer & Single-Clock Pulse Generator
-    │   ├── pwm_led_controller.v                          # 1kHz PWM Controller (LOW, HIGH, AUTO 2.0s)
-    │   ├── uart_tx_string.v                              # 115200 8N1 UART Serializer
-    │   ├── gowin_pllvr.v                                 # Gowin PLLVR Wrapper (27MHz -> 50MHz)
-    │   ├── prim_sim.v                                    # Gowin Simulation Primitive Model Library
-    │   └── ip/gowin_pllvr/                               # IP Generator Core Configuration
-    ├── sim/                                              # Verification Testbenches
-    │   ├── tb_top_system_v2.v                            # Automated System Testbench (25 Checks, 0 Errors)
-    │   ├── tb_uart_tx.v                                  # UART Timing Testbench
-    │   └── wavefinal.do                                  # ModelSim Waveform & Cursor Script
-    └── docs/                                             # Technical Documentation Archive
+├── docs/                                                 # Project-wide Documentation Archive
+│   ├── ĐỀ THI FGPA 2026.docx.pdf                         # Official FPGA Contest Specification
+│   ├── ĐỀ THI MCU 2026.pdf                               # Official MCU Contest Specification
+│   ├── Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v (1).pdf # Gowin FPGA Reference Book
+│   └── Thuyết Minh PBL3 Chốt 1705.pdf                   # PBL3 Graduation Project Report
+├── FPGA/                                                 # FPGA Workspace Directory
+│   ├── .gitignore                                        # Gowin & ModelSim build output exclusions
+│   ├── README.md                                         # FPGA Subsystem Specification & Rebuild Guide
+│   ├── TESTING.md                                        # Verification Suite & ModelSim Guide (25 Checks)
+│   ├── ISSUE_ANALYSIS_DEEP_DIVE.md                       # Comprehensive Analysis of 6 Hardware Bugs
+│   ├── pwm11.gprj                                        # Gowin EDA Project Configuration
+│   ├── constr/pwm11.cst                                  # Physical Pin Constraints (Kiwi Nano 4K)
+│   ├── src/                                              # Synthesizable RTL Modules
+│   │   ├── top_system.v                                  # Top Integration & Supervisor FSM
+│   │   ├── button_debounce.v                             # 20ms Debouncer & Single-Clock Pulse Generator
+│   │   ├── pwm_led_controller.v                          # 1kHz PWM Controller (LOW, HIGH, AUTO 2.0s)
+│   │   ├── uart_tx_string.v                              # 115200 8N1 UART Serializer
+│   │   ├── gowin_pllvr.v                                 # Gowin PLLVR Wrapper (27MHz -> 50MHz)
+│   │   ├── prim_sim.v                                    # Gowin Simulation Primitive Model Library
+│   │   └── ip/gowin_pllvr/                               # IP Generator Core Configuration
+│   ├── sim/                                              # Verification Testbenches & Simulation Suite
+│   │   ├── README_MODELSIM_SIMULATION.md                 # ModelSim SE 10.6d Simulation Guide
+│   │   ├── README_SIMULATION_SCALING.md                  # Simulation Time Acceleration Report
+│   │   ├── run_sim.do                                    # One-click automated ModelSim execution script
+│   │   ├── wavefinal.do                                  # ModelSim Waveform & Cursor Script
+│   │   ├── tb_top_system_v2.v                            # Automated System Testbench (25 Checks, 0 Errors)
+│   │   └── tb_uart_tx.v                                  # UART Timing Testbench
+│   └── docs/                                             # Technical Documentation Archive
+│       └── ĐỀ THI FGPA 2026.docx.pdf                     # Official FPGA Contest Specification
+└── MCU_Contest_2026/                                     # MCU Workspace Directory (SN32F407)
+    ├── README.md                                         # MCU Firmware Architecture Specification
+    ├── README_KEIL_DEBUG_SIMULATION.md                   # Keil µVision5 Watch 1 Debug Simulation Guide
+    ├── ISSUE_ANALYSIS_DEEP_DIVE.md                       # Comprehensive Analysis of 6 MCU Bugs
+    ├── docs/                                             # MCU Contest Documentation Archive
+    │   └── ĐỀ THI MCU 2026.pdf                           # Official MCU Contest Specification
+    └── src/                                              # Synthesizable C & Assembly Source Files
 ```
 
 ---
@@ -572,13 +579,13 @@ sequenceDiagram
 ---
 
 ## 10. Zero-Dependency ModelSim Simulation Quick Start
-*(Detailed guide at [`README_MODELSIM_SIMULATION.md`](README_MODELSIM_SIMULATION.md))*
+*(Detailed guide at [`sim/README_MODELSIM_SIMULATION.md`](sim/README_MODELSIM_SIMULATION.md))*
 
 The project embeds the official Gowin primitive simulation models ([`src/prim_sim.v`](src/prim_sim.v)), allowing instant simulation in ModelSim without requiring Gowin EDA installation:
 
 ### 🚀 Single-Command Automated Execution
 1. Open **ModelSim SE 10.6d**.
-2. Select **`File` $\rightarrow$ `Change Directory...`** $\rightarrow$ Navigate to `FPGA/`.
+2. Select **`File` $\rightarrow$ `Change Directory...`** $\rightarrow$ Navigate to `sim/`.
 3. In the **Transcript** window, enter:
    ```tcl
    do run_sim.do
