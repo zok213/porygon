@@ -17,18 +17,18 @@ Tệp Testbench [`sim/tb_top_system_v2.v`](sim/tb_top_system_v2.v) được thi�
 
 | Mã Ca Kiểm Thử | Tên Kịch Bản | Hành Vi Kích Hoạt | Cơ Chế Kiểm Tra Tự Động | Tiêu Chuẩn Đạt (Pass Criteria) | Kết Quả Thực Tế |
 | :---: | :--- | :--- | :--- | :--- | :---: |
-| **TC-01** | Khởi động / Reset | Kích hoạt `trigger_reset` | `uart_check_message` | Nhận đúng 11 byte `"MODE: LOW\r\n"` | **PASS (11/11)** |
+| **TC-01** | Khởi động / Reset | Kích hoạt `trigger_reset` | `uart_check_message` | Nhận đúng 11 byte `"MODE: LOW\r\n"` | **PASS (11/11 bytes)** |
 | **TC-02** | Đo Duty Mode LOW | Lấy mẫu tín hiệu `led_out` | `measure_pwm_duty` | Tỷ lệ mức cao đạt đúng $25.0\%$ | **PASS (25.0%)** |
-| **TC-03** | Chuyển LOW $\rightarrow$ HIGH | Nhấn Button 1 (`press_btn1`) | `uart_check_message` | Nhận đúng 12 byte `"MODE: HIGH\r\n"` | **PASS (12/12)** |
+| **TC-03** | Chuyển LOW $\rightarrow$ HIGH | Nhấn Button 1 (`press_btn1`) | `uart_check_message` | Nhận đúng 12 byte `"MODE: HIGH\r\n"` | **PASS (12/12 bytes)** |
 | **TC-04** | Đo Duty Mode HIGH | Lấy mẫu tín hiệu `led_out` | `measure_pwm_duty` | Tỷ lệ mức cao đạt đúng $100.0\%$ (Sáng liên tục) | **PASS (100.0%)** |
-| **TC-05** | Chuyển HIGH $\rightarrow$ LOW | Nhấn Button 1 (`press_btn1`) | `uart_check_message` | Nhận đúng 11 byte `"MODE: LOW\r\n"` | **PASS (11/11)** |
-| **TC-06** | Chuyển LOW $\rightarrow$ AUTO | Nhấn Button 2 (`press_btn2`) | `uart_check_message` | Nhận đúng 12 byte `"MODE: AUTO\r\n"` | **PASS (12/12)** |
+| **TC-05** | Chuyển HIGH $\rightarrow$ LOW | Nhấn Button 1 (`press_btn1`) | `uart_check_message` | Nhận đúng 11 byte `"MODE: LOW\r\n"` | **PASS (11/11 bytes)** |
+| **TC-06** | Chuyển LOW $\rightarrow$ AUTO | Nhấn Button 2 (`press_btn2`) | `uart_check_message` | Nhận đúng 12 byte `"MODE: AUTO\r\n"` | **PASS (12/12 bytes)** |
 | **TC-07** | Đo Chu kỳ 1 Thở AUTO | Theo dõi sườn `breath_dir` | `prove_breath_2s_via_transcript` | Pha giảm $1.000\text{ s}$ + Pha tăng $1.000\text{ s} = 2.000000\text{ s}$ | **PASS (2.000000s)** |
 | **TC-08** | Đo Chu kỳ 2 Thở AUTO | Theo dõi sườn `breath_dir` | `prove_breath_2s_via_transcript` | Pha giảm $1.000\text{ s}$ + Pha tăng $1.000\text{ s} = 2.000000\text{ s}$ | **PASS (2.000000s)** |
-| **TC-09** | Thoát AUTO $\rightarrow$ LOW | Nhấn Button 1 trong AUTO | `uart_check_message` | Nhận đúng 11 byte `"MODE: LOW\r\n"` | **PASS (11/11)** |
-| **TC-10** | Lọc Nhiễu Rung Phím (Bounce) | Kích hoạt `glitchy_press_btn1` | `uart_check_message` + `check_no_uart` | Chỉ phát đúng 1 chuỗi `"MODE: HIGH\r\n"` duy nhất | **PASS (1 lần)** |
-| **TC-11** | Loại Bỏ Xung Phím Ngắn | Nhấn cực ngắn ($5\text{ ms} < 20\text{ ms}$) | `check_no_uart_within` | Không phát UART, giữ nguyên trạng thái | **PASS (Bỏ qua)** |
-| **TC-12** | Reset Khi Đang Ở HIGH | Kích hoạt `trigger_reset` | `uart_check_message` | Quay về LOW và phát `"MODE: LOW\r\n"` | **PASS (11/11)** |
+| **TC-09** | Thoát AUTO $\rightarrow$ LOW | Nhấn Button 1 trong AUTO | `uart_check_message` | Nhận đúng 11 byte `"MODE: LOW\r\n"` | **PASS (11/11 bytes)** |
+| **TC-10** | Lọc Nhiễu Rung Phím (Bounce) | Kích hoạt `glitchy_press_btn1` | `uart_check_message` + `check_no_uart` | Chỉ phát đúng 1 chuỗi `"MODE: HIGH\r\n"` duy nhất | **PASS (1 lần đổi)** |
+| **TC-11** | Loại Bỏ Xung Phím Ngắn | Nhấn cực ngắn ($5\text{ ms} < 20\text{ ms}$) | `short_press_btn1` | Không phát UART, giữ nguyên trạng thái | **PASS (Không đổi)** |
+| **TC-12** | Reset Khi Đang Ở HIGH | Kích hoạt `trigger_reset` | `uart_check_message` | Quay về LOW và phát `"MODE: LOW\r\n"` | **PASS (11/11 bytes)** |
 
 ---
 

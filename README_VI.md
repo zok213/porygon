@@ -51,6 +51,7 @@ porygon/
 ├── README_EN.md                                          # Master System Architectural Specification (English)
 ├── README_MODELSIM_SIMULATION.md                         # Hướng dẫn chi tiết chạy mô phỏng ModelSim SE 10.6d
 ├── README_KEIL_DEBUG_SIMULATION.md                       # Hướng dẫn chi tiết cấu hình Debug Watch 1 trên Keil µVision5
+├── README_SIMULATION_SCALING.md                          # Thuyết minh kỹ thuật tỷ lệ thời gian mô phỏng tăng tốc
 ├── SECURITY.md                                           # Chính sách bảo mật & bảo vệ tài nguyên phần cứng
 ├── SETUP.md                                              # Hướng dẫn thiết lập môi trường Gowin EDA & ModelSim
 ├── ĐỀ THI FGPA 2026.docx.pdf                             # Bản gốc Đề thi Khối FPGA Đà Nẵng 2026
@@ -116,7 +117,7 @@ flowchart TD
     end
 
     subgraph UART_BLOCK ["Khối 3: Truyền Telemetry UART 115200 (2.5đ)"]
-        FSM -->|"send_req & mode[1:0]"| UART["uart_tx_string<br>• BAUD_DIV = 434 (Error 0.006%)<br>• Chốt mode_latched an toàn<br>• Phát ASCII kết thúc bằng \r\n"]
+        FSM -->|"send_req & mode[1:0]"| UART["uart_tx_string<br>• BAUD_DIV = 434 (Error 0.006%)<br>• Chốt mode_latched an toàn<br>• Phát ASCII kết thúc bằng \\r\\n"]
         UART --> TX_PIN["Cổng UART TX qua USB<br><b>uart_tx (Pin 39, 3.3V)</b>"]
     end
 ```
@@ -169,18 +170,12 @@ stateDiagram-v2
 ### Bảng Chuyển Trạng Thái FSM & Khung Truyền UART
 | Trạng Thái Hiện Tại | Tín Hiệu Kích Hoạt | Trạng Thái Kế Tiếp | Chuỗi Ký Tự UART Phát Ra | Trạng Thái LED PWM |
 | :--- | :--- | :--- | :--- | :--- |
-| **Bất kỳ (Khởi động / Reset)** | `sys_rst_n` lên mức 1 | **Mode LOW (2'b00)** | `"MODE: LOW
-"` (11 bytes) | Duty Cycle $25\%$ ($1\text{ kHz}$) |
-| **Mode LOW (2'b00)** | Nhấn Nút 1 (`btn1_pulse`) | **Mode HIGH (2'b01)** | `"MODE: HIGH
-"` (12 bytes) | Duty Cycle $100\%$ (Sáng liên tục) |
-| **Mode HIGH (2'b01)** | Nhấn Nút 1 (`btn1_pulse`) | **Mode LOW (2'b00)** | `"MODE: LOW
-"` (11 bytes) | Duty Cycle $25\%$ ($1\text{ kHz}$) |
-| **Mode LOW (2'b00)** | Nhấn Nút 2 (`btn2_pulse`) | **Mode AUTO (2'b10)** | `"MODE: AUTO
-"` (12 bytes) | Hiệu ứng Thở $0\% \leftrightarrow 100\%$ ($2.0\text{ s}$) |
-| **Mode HIGH (2'b01)** | Nhấn Nút 2 (`btn2_pulse`) | **Mode AUTO (2'b10)** | `"MODE: AUTO
-"` (12 bytes) | Hiệu ứng Thở $0\% \leftrightarrow 100\%$ ($2.0\text{ s}$) |
-| **Mode AUTO (2'b10)** | Nhấn Nút 1 (`btn1_pulse`) | **Mode LOW (2'b00)** | `"MODE: LOW
-"` (11 bytes) | Duty Cycle $25\%$ ($1\text{ kHz}$) |
+| **Bất kỳ (Khởi động / Reset)** | `sys_rst_n` lên mức 1 | **Mode LOW (2'b00)** | `"MODE: LOW\r\n"` (11 bytes) | Duty Cycle $25\%$ ($1\text{ kHz}$) |
+| **Mode LOW (2'b00)** | Nhấn Nút 1 (`btn1_pulse`) | **Mode HIGH (2'b01)** | `"MODE: HIGH\r\n"` (12 bytes) | Duty Cycle $100\%$ (Sáng liên tục) |
+| **Mode HIGH (2'b01)** | Nhấn Nút 1 (`btn1_pulse`) | **Mode LOW (2'b00)** | `"MODE: LOW\r\n"` (11 bytes) | Duty Cycle $25\%$ ($1\text{ kHz}$) |
+| **Mode LOW (2'b00)** | Nhấn Nút 2 (`btn2_pulse`) | **Mode AUTO (2'b10)** | `"MODE: AUTO\r\n"` (12 bytes) | Hiệu ứng Thở $0\% \leftrightarrow 100\%$ ($2.0\text{ s}$) |
+| **Mode HIGH (2'b01)** | Nhấn Nút 2 (`btn2_pulse`) | **Mode AUTO (2'b10)** | `"MODE: AUTO\r\n"` (12 bytes) | Hiệu ứng Thở $0\% \leftrightarrow 100\%$ ($2.0\text{ s}$) |
+| **Mode AUTO (2'b10)** | Nhấn Nút 1 (`btn1_pulse`) | **Mode LOW (2'b00)** | `"MODE: LOW\r\n"` (11 bytes) | Duty Cycle $25\%$ ($1\text{ kHz}$) |
 | **Mode AUTO (2'b10)** | Nhấn Nút 2 (`btn2_pulse`) | **Giữ nguyên AUTO** | *(Không phát chuỗi thừa)* | Giữ nguyên hiệu ứng Thở $2.0\text{ s}$ |
 
 ---
@@ -334,8 +329,7 @@ $$T_{\text{cycle}} = (1,000\text{ nấc tăng} \times 1.0\text{ ms}) + (1,000\te
 | **Xung Nhịp & Reset** | Dùng mạch chia tần số mềm; không đồng bộ reset gây trạng thái treo lơ lửng. | Dùng IP Core Gowin PLLVR phần cứng + Mạch Reset Synchronizer 2 tầng trễ $20\text{ ms}$. |
 | **Lọc Dội Phím** | Thanh ghi dịch 4 bit ngắn (~80ns); vẫn bị rung nẩy cơ học kích đúp FSM. | Bộ tích phân $20\text{ ms}$ + 2 tầng D-FF + Mạch bắt sườn xuống xuất xung đúng 1 clock $20\text{ ns}$. |
 | **Điều Chế PWM** | Tần số PWM thấp gây nhấp nháy mắt; ít nấc độ sáng gây giật nấc. | Sóng mang $1\text{ kHz}$ không nhấp nháy + $2,000$ nấc độ sáng siêu mịn cho chu kỳ thở $2.000\text{ s}$. |
-| **Truyền UART** | Gửi từng ký tự đơn `'A'`, không chốt trạng thái; dễ méo chuỗi khi bấm phím. | Gửi đầy đủ chuỗi `"MODE: ... 
-"` + Chốt `mode_latched` an toàn + Sai số baud chỉ $0.0064\%$. |
+| **Truyền UART** | Gửi từng ký tự đơn `'A'`, không chốt trạng thái; dễ méo chuỗi khi bấm phím. | Gửi đầy đủ chuỗi `"MODE: ... \r\n"` + Chốt `mode_latched` an toàn + Sai số baud chỉ $0.0064\%$. |
 | **Mô Phỏng Kiểm Thử** | Thiếu thư viện linh kiện, báo lỗi `PLLVR undefined`; quan sát bằng mắt. | Thư viện `prim_sim.v` tự chứa + Testbench tự động 25 chỉ tiêu chứng minh chu kỳ thở $2.000\text{ s}$. |
 
 ---
@@ -345,20 +339,15 @@ $$T_{\text{cycle}} = (1,000\text{ nấc tăng} \times 1.0\text{ ms}) + (1,000\te
 ### Ma Trận 25 Chỉ Tiêu Kiểm Thử Tự Động ([`FPGA/sim/tb_top_system_v2.v`](FPGA/sim/tb_top_system_v2.v))
 | Nhóm Kiểm Thử | Kịch Bản Kích Hoạt | Hành Vi Mong Đợi | Bộ Kiểm Tra Tự Động | Kết Quả Thực Tế |
 | :---: | :--- | :--- | :--- | :---: |
-| **TC-01** | Power-on / Reset | Hệ thống về LOW; phát `"MODE: LOW
-"` | `uart_check_message(..., 11)` | **PASS (11/11 bytes)** |
+| **TC-01** | Power-on / Reset | Hệ thống về LOW; phát `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | **PASS (11/11 bytes)** |
 | **TC-02** | Đo Duty Mode LOW | Tỷ lệ mức cao đạt đúng 25% | `measure_pwm_duty("LOW", ...)` | **PASS (25.0%)** |
-| **TC-03** | Nhấn Button 1 | Chuyển LOW $\rightarrow$ HIGH; phát `"MODE: HIGH
-"` | `uart_check_message(..., 12)` | **PASS (12/12 bytes)** |
+| **TC-03** | Nhấn Button 1 | Chuyển LOW $\rightarrow$ HIGH; phát `"MODE: HIGH\r\n"` | `uart_check_message(..., 12)` | **PASS (12/12 bytes)** |
 | **TC-04** | Đo Duty Mode HIGH | Tỷ lệ mức cao đạt đúng 100% | `measure_pwm_duty("HIGH", ...)` | **PASS (100.0%)** |
-| **TC-05** | Nhấn tiếp Button 1 | Chuyển HIGH $\rightarrow$ LOW; phát `"MODE: LOW
-"` | `uart_check_message(..., 11)` | **PASS (11/11 bytes)** |
-| **TC-06** | Nhấn Button 2 | Chuyển sang AUTO; phát `"MODE: AUTO
-"` | `uart_check_message(..., 12)` | **PASS (12/12 bytes)** |
+| **TC-05** | Nhấn tiếp Button 1 | Chuyển HIGH $\rightarrow$ LOW; phát `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | **PASS (11/11 bytes)** |
+| **TC-06** | Nhấn Button 2 | Chuyển sang AUTO; phát `"MODE: AUTO\r\n"` | `uart_check_message(..., 12)` | **PASS (12/12 bytes)** |
 | **TC-07** | Đo Chu kỳ 1 Thở AUTO | Pha giảm $1.000\text{ s}$ + Pha tăng $1.000\text{ s} = 2.000\text{ s}$ | `prove_breath_2s_via_transcript` | **PASS (2.000000s)** |
 | **TC-08** | Đo Chu kỳ 2 Thở AUTO | Pha giảm $1.000\text{ s}$ + Pha tăng $1.000\text{ s} = 2.000\text{ s}$ | `prove_breath_2s_via_transcript` | **PASS (2.000000s)** |
-| **TC-09** | Nhấn Button 1 trong AUTO | Ép chuyển về LOW; phát `"MODE: LOW
-"` | `uart_check_message(..., 11)` | **PASS (11/11 bytes)** |
+| **TC-09** | Nhấn Button 1 trong AUTO | Ép chuyển về LOW; phát `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | **PASS (11/11 bytes)** |
 | **TC-10** | Nhiễu rung phím (Bounce) | Rung nẩy phím chỉ tính đúng 1 lần duy nhất | `glitchy_press_btn1` | **PASS (1 lần đổi)** |
 | **TC-11** | Xung cực ngắn (< 5ms) | Bị loại bỏ hoàn toàn, không đổi mode | `short_press_btn1` | **PASS (Không đổi)** |
 | **TC-12** | Reset khi đang ở HIGH | Hệ thống quay về LOW & phát lại UART | `trigger_reset` | **PASS (11/11 bytes)** |
