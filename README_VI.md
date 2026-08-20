@@ -10,6 +10,7 @@ Mã nguồn được thiết kế tuân thủ nghiêm ngặt các nguyên lý **
 - **Điều Chế PWM $1\text{ kHz}$ Không Nhấp Nháy Mắt (Flicker-Free)**: Sóng mang $1,000\text{ Hz}$ (`ARR_MAX = 50_000`), chia mịn thành 2,000 nấc độ sáng ($1,000$ nấc tăng $+ 1,000$ nấc giảm) cho chu kỳ thở chính xác tuyệt đối **$2.000\text{ giây}$**.
 - **Bộ Truyền Telemetry UART $115,200\text{ bps}$ Có Chốt An Toàn**: Hệ số chia `BAUD_DIV = 434` (sai số $0.0064\% \ll \pm 2.0\%$) với cơ chế chốt `mode_latched` chống méo chuỗi ký tự khi chuyển trạng thái giữa chừng.
 - **Mô Phỏng Tự Chứa (Zero-Dependency ModelSim Simulation)**: Tích hợp sẵn thư viện linh kiện Gowin ([`FPGA/src/prim_sim.v`](FPGA/src/prim_sim.v)), kịch bản chạy 1 lệnh [`FPGA/sim/run_sim.do`](FPGA/sim/run_sim.do), và Testbench tự động kiểm thử 25 chỉ tiêu (`25 checks, 0 errors`) chứng minh chu kỳ thở $2.000000\text{ s}$ trên ModelSim.
+- **Minh Chứng Thực Nghiệm Phần Cứng 100%**: Đã xác thực thành công trên phần cứng thật qua cổng COM3 với phần mềm Hercules Terminal ở tốc độ 115200 8N1.
 
 > 📖 **Tài liệu Hướng dẫn Mô phỏng Chuyên sâu**:
 > - 🌊 [Hướng dẫn Mô phỏng ModelSim FPGA Toàn diện](FPGA/sim/README_MODELSIM_SIMULATION.md)
@@ -49,6 +50,8 @@ porygon/
 ├── SECURITY.md                                           # Chính sách bảo mật & bảo vệ tài nguyên phần cứng
 ├── SETUP.md                                              # Hướng dẫn thiết lập môi trường Gowin EDA & ModelSim
 ├── docs/                                                 # Thư mục tài liệu chung toàn dự án
+│   ├── assets/                                           # Hình ảnh sơ đồ và kết quả minh chứng phần cứng
+│   │   └── uart_telemetry_hercules_com3.png              # Hình ảnh minh chứng truyền nhận UART thực tế trên cổng COM3
 │   ├── ĐỀ THI FGPA 2026.docx.pdf                         # Bản gốc Đề thi Khối FPGA Đà Nẵng 2026
 │   ├── ĐỀ THI MCU 2026.pdf                               # Bản gốc Đề thi Khối Microcontroller Đà Nẵng 2026
 │   ├── Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v (1).pdf # Tài liệu lập trình Gowin FPGA tiếng Việt
@@ -77,6 +80,8 @@ porygon/
 │   │   ├── tb_top_system_v2.v                            # Testbench tự động kiểm tra toàn diện 25 chỉ tiêu (0 lỗi)
 │   │   └── tb_uart_tx.v                                  # Testbench đo thời gian phát chuỗi khối UART
 │   └── docs/                                             # Thư mục tài liệu đề bài khối FPGA
+│       ├── assets/                                       # Ảnh minh chứng phần cứng nội bộ khối FPGA
+│       │   └── uart_telemetry_hercules_com3.png          # Ảnh minh chứng UART cổng COM3
 │       └── ĐỀ THI FGPA 2026.docx.pdf                     # Bản sao đề thi chính thức Khối FPGA Đà Nẵng 2026
 └── MCU_Contest_2026/                                     # Thư mục Không gian làm việc Dự án Vi điều khiển SN32F407
     ├── README.md                                         # Báo cáo kiến trúc hệ thống Firmware MCU
@@ -222,7 +227,7 @@ sequenceDiagram
 
 ---
 
-## 9. Kiến Trúc Bộ Truyền Telemetry UART 115200 bps & Chốt Mode
+## 9. Kiến Trúc Bộ Truyền Telemetry UART 115200 bps & Minh Chứng Thực Nghiệm
 
 1. **Bộ chia tần số Baudrate**:
    - Hệ số chia nhịp:
@@ -237,6 +242,25 @@ sequenceDiagram
 3. **Cơ chế Chốt Chế Độ An Toàn (`mode_latched`)**:
    - Khi nhận xung yêu cầu truyền `send_req`, FSM lưu ngay chế độ hiện tại vào thanh ghi `mode_latched`.
    - Trong suốt thời gian $1.042\text{ ms}$ truyền chuỗi, nếu có bất kỳ tín hiệu nhiễu hoặc thay đổi trạng thái nào, chuỗi đang phát vẫn bảo toàn nguyên vẹn 100%, không bị chắp vá ký tự.
+
+### 📸 Hình Ảnh Minh Chứng Kết Quả Truyền Nhận Dữ Liệu UART Thực Tế Trên Phần Cứng
+
+Dưới đây là hình ảnh chụp thực tế màn hình giám sát Terminal qua cổng nạp USB-UART (**Hercules SETUP utility**) kết nối cổng **COM3** ở cấu hình **115200 bps, 8 Data bits, No Parity, Handshake OFF**:
+
+![Minh chứng truyền nhận dữ liệu UART Telemetry thực tế trên phần cứng COM3 115200 bps](docs/assets/uart_telemetry_hercules_com3.png)
+
+*Hình 1: Kết quả nhận chuỗi Telemetry thời gian thực trên bo mạch Kiwi Nano 4K (COM3 @ 115200 bps).*
+
+**Giải trình trình tự chuỗi telemetry thực nghiệm trên phần cứng**:
+1. `Serial port COM3 opened` $\rightarrow$ Mở cổng COM3 thành công.
+2. `MODE: LOW` $\rightarrow$ Trạng thái khởi động mặc định (Power-on Reset) khi mạch vừa được cấp nguồn.
+3. `MODE: HIGH` $\rightarrow$ Nhấn Nút 1 (BTN1) chuyển sang chế độ Sáng 100%.
+4. `MODE: AUTO` $\rightarrow$ Nhấn Nút 2 (BTN2) chuyển sang chế độ Thở 2.0s.
+5. `MODE: LOW` $\rightarrow$ Nhấn Nút 1 (BTN1) khi đang ở AUTO để ép thoát về chế độ LOW 25%.
+6. `MODE: HIGH` $\rightarrow$ Nhấn Nút 1 (BTN1) đổi sang HIGH.
+7. `MODE: LOW` $\rightarrow$ Nhấn Nút 1 (BTN1) đổi lại về LOW.
+
+👉 **Kết luận thực nghiệm**: Toàn bộ chuỗi dữ liệu telemetry ASCII nhận được nguyên vẹn 100%, kết thúc bằng cặp ký tự `\r\n` (xuống dòng chuẩn xác), hoàn toàn không bị mất ký tự, không bị rác dữ liệu hay nghẽn khung truyền.
 
 ---
 

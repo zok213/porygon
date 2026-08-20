@@ -41,6 +41,8 @@ porygon/
 ├── SECURITY.md                                           # Chính sách bảo mật & bảo vệ tài nguyên phần cứng
 ├── SETUP.md                                              # Hướng dẫn thiết lập môi trường Gowin EDA & ModelSim
 ├── docs/                                                 # Thư mục tài liệu chung toàn dự án
+│   ├── assets/                                           # Hình ảnh sơ đồ và kết quả minh chứng phần cứng
+│   │   └── uart_telemetry_hercules_com3.png              # Hình ảnh minh chứng truyền nhận UART thực tế trên cổng COM3
 │   ├── ĐỀ THI FGPA 2026.docx.pdf                         # Bản gốc Đề thi Khối FPGA Đà Nẵng 2026
 │   ├── ĐỀ THI MCU 2026.pdf                               # Bản gốc Đề thi Khối Microcontroller Đà Nẵng 2026
 │   ├── Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v (1).pdf # Tài liệu lập trình Gowin FPGA tiếng Việt
@@ -69,6 +71,8 @@ porygon/
 │   │   ├── tb_top_system_v2.v                            # Testbench tự động kiểm tra toàn diện 25 chỉ tiêu (0 lỗi)
 │   │   └── tb_uart_tx.v                                  # Testbench đo thời gian phát chuỗi khối UART
 │   └── docs/                                             # Thư mục tài liệu đề bài khối FPGA
+│       ├── assets/                                       # Ảnh minh chứng phần cứng nội bộ khối FPGA
+│       │   └── uart_telemetry_hercules_com3.png          # Ảnh minh chứng UART cổng COM3
 │       └── ĐỀ THI FGPA 2026.docx.pdf                     # Bản sao đề thi chính thức Khối FPGA Đà Nẵng 2026
 └── MCU_Contest_2026/                                     # Thư mục Không gian làm việc Dự án Vi điều khiển SN32F407
     ├── README.md                                         # Báo cáo kiến trúc hệ thống Firmware MCU
@@ -214,7 +218,7 @@ sequenceDiagram
 
 ---
 
-## 9. Kiến Trúc Bộ Truyền Telemetry UART 115200 bps & Chốt Mode
+## 9. Kiến Trúc Bộ Truyền Telemetry UART 115200 bps & Minh Chứng Thực Nghiệm
 
 1. **Bộ chia tần số Baudrate**:
    - Hệ số chia nhịp:
@@ -229,6 +233,25 @@ sequenceDiagram
 3. **Cơ chế Chốt Chế Độ An Toàn (`mode_latched`)**:
    - Khi nhận xung yêu cầu truyền `send_req`, FSM lưu ngay chế độ hiện tại vào thanh ghi `mode_latched`.
    - Trong suốt thời gian $1.042\text{ ms}$ truyền chuỗi, nếu có bất kỳ tín hiệu nhiễu hoặc thay đổi trạng thái nào, chuỗi đang phát vẫn bảo toàn nguyên vẹn 100%, không bị chắp vá ký tự.
+
+### 📸 Hình Ảnh Minh Chứng Kết Quả Truyền Nhận Dữ Liệu UART Thực Tế Trên Phần Cứng
+
+Dưới đây là hình ảnh chụp thực tế màn hình giám sát Terminal qua cổng nạp USB-UART (**Hercules SETUP utility**) kết nối cổng **COM3** ở cấu hình **115200 bps, 8 Data bits, No Parity, Handshake OFF**:
+
+![Minh chứng truyền nhận dữ liệu UART Telemetry thực tế trên phần cứng COM3 115200 bps](docs/assets/uart_telemetry_hercules_com3.png)
+
+*Hình 1: Kết quả nhận chuỗi Telemetry thời gian thực trên bo mạch Kiwi Nano 4K (COM3 @ 115200 bps).*
+
+**Giải trình trình tự chuỗi telemetry thực nghiệm trên phần cứng**:
+1. `Serial port COM3 opened` $\rightarrow$ Mở cổng COM3 thành công.
+2. `MODE: LOW` $\rightarrow$ Trạng thái khởi động mặc định (Power-on Reset) khi mạch vừa được cấp nguồn.
+3. `MODE: HIGH` $\rightarrow$ Nhấn Nút 1 (BTN1) chuyển sang chế độ Sáng 100%.
+4. `MODE: AUTO` $\rightarrow$ Nhấn Nút 2 (BTN2) chuyển sang chế độ Thở 2.0s.
+5. `MODE: LOW` $\rightarrow$ Nhấn Nút 1 (BTN1) khi đang ở AUTO để ép thoát về chế độ LOW 25%.
+6. `MODE: HIGH` $\rightarrow$ Nhấn Nút 1 (BTN1) đổi sang HIGH.
+7. `MODE: LOW` $\rightarrow$ Nhấn Nút 1 (BTN1) đổi lại về LOW.
+
+👉 **Kết luận thực nghiệm**: Toàn bộ chuỗi dữ liệu telemetry ASCII nhận được nguyên vẹn 100%, kết thúc bằng cặp ký tự `\r\n` (xuống dòng chuẩn xác), hoàn toàn không bị mất ký tự, không bị rác dữ liệu hay nghẽn khung truyền.
 
 ---
 
@@ -390,6 +413,8 @@ porygon/
 ├── SECURITY.md                                           # Security Policy & Hardware IP Protection
 ├── SETUP.md                                              # Toolchain setup instructions (Gowin & ModelSim)
 ├── docs/                                                 # Project-wide Documentation Archive
+│   ├── assets/                                           # Architecture diagrams & Hardware captures
+│   │   └── uart_telemetry_hercules_com3.png              # Hardware UART capture over COM3
 │   ├── ĐỀ THI FGPA 2026.docx.pdf                         # Official FPGA Contest Specification
 │   ├── ĐỀ THI MCU 2026.pdf                               # Official MCU Contest Specification
 │   ├── Gowin-FPGA-Vietnamese-Book-ACG525-Basic-part-Print-v (1).pdf # Gowin FPGA Reference Book
@@ -400,7 +425,8 @@ porygon/
 │   ├── TESTING.md                                        # Verification Suite & ModelSim Guide (25 Checks)
 │   ├── ISSUE_ANALYSIS_DEEP_DIVE.md                       # Comprehensive Analysis of 6 Hardware Bugs
 │   ├── pwm11.gprj                                        # Gowin EDA Project Configuration
-│   ├── constr/pwm11.cst                                  # Physical Pin Constraints (Kiwi Nano 4K)
+│   ├── constr/                                           # Physical Constraints
+│   │   └── pwm11.cst                                     # Physical Pin Constraints (Kiwi Nano 4K)
 │   ├── src/                                              # Synthesizable RTL Modules
 │   │   ├── top_system.v                                  # Top Integration & Supervisor FSM
 │   │   ├── button_debounce.v                             # 20ms Debouncer & Single-Clock Pulse Generator
@@ -417,6 +443,8 @@ porygon/
 │   │   ├── tb_top_system_v2.v                            # Automated System Testbench (25 Checks, 0 Errors)
 │   │   └── tb_uart_tx.v                                  # UART Timing Testbench
 │   └── docs/                                             # Technical Documentation Archive
+│       ├── assets/                                       # Subfolder assets
+│       │   └── uart_telemetry_hercules_com3.png          # COM3 UART verification capture
 │       └── ĐỀ THI FGPA 2026.docx.pdf                     # Official FPGA Contest Specification
 └── MCU_Contest_2026/                                     # MCU Workspace Directory (SN32F407)
     ├── README.md                                         # MCU Firmware Architecture Specification
@@ -560,7 +588,7 @@ sequenceDiagram
 
 ---
 
-## 9. UART Telemetry Subsystem (115200 bps) & Mode Latching Engine
+## 9. UART Telemetry Subsystem (115200 bps) & Empirical Validation
 
 1. **Baud Rate Frequency Division**:
    - Baud divisor formula:
@@ -575,6 +603,25 @@ sequenceDiagram
 3. **Zero-Collision `mode_latched` State Protection**:
    - Upon receiving transmission trigger `send_req`, the FSM immediately registers the current mode into `mode_latched`.
    - During the entire $1.042\text{ ms}$ required to stream the ASCII packet, any incoming button presses will not corrupt the ongoing packet string.
+
+### 📸 Empirical Hardware UART Telemetry Validation (Hercules Terminal Capture)
+
+The screen capture below displays real-time telemetry streaming from the **Kiwi Nano 4K FPGA board** over **COM3** at **115200 bps, 8 Data bits, No Parity, Handshake OFF** using **Hercules SETUP utility**:
+
+![Minh chứng truyền nhận dữ liệu UART Telemetry thực tế trên phần cứng COM3 115200 bps](docs/assets/uart_telemetry_hercules_com3.png)
+
+*Figure 1: Real-time Telemetry capture on Kiwi Nano 4K hardware (COM3 @ 115200 bps).*
+
+**Hardware Telemetry Sequence Log Explanation**:
+1. `Serial port COM3 opened` $\rightarrow$ Successfully opened serial communication port.
+2. `MODE: LOW` $\rightarrow$ Power-on reset state immediately transmitted upon boot.
+3. `MODE: HIGH` $\rightarrow$ BTN1 pressed: transition from LOW to HIGH (100% PWM).
+4. `MODE: AUTO` $\rightarrow$ BTN2 pressed: transition to AUTO 2.0s Breathing mode.
+5. `MODE: LOW` $\rightarrow$ BTN1 pressed during AUTO: forced exit back to LOW mode.
+6. `MODE: HIGH` $\rightarrow$ BTN1 pressed: toggle to HIGH mode.
+7. `MODE: LOW` $\rightarrow$ BTN1 pressed: toggle back to LOW mode.
+
+👉 **Empirical Conclusion**: All telemetry ASCII strings are received with 100% integrity, terminated with exact `\r\n` carriage return and line feed delimiters, free of framing errors or data corruptions.
 
 ---
 
