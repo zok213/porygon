@@ -2,7 +2,7 @@
 # ROOT GITIGNORE FOR FPGA & MCU PROJECT REPOSITORY (zok213/porygon)
 # =========================================================================
 
-# Large Archives Exceeding GitHub 100MB File Limit
+# Large Archives Exceeding GitHub File Limit
 *.zip
 *.7z
 *.tar.gz
@@ -36,10 +36,40 @@ __history/
 *.bak
 *.dep
 
+# Gowin EDA Synthesis & Place & Route Artifacts
+impl/
+temp/
+*.db
+*.log
+*.rpt
+*.fs
+*.posp
+*.tr
+*.pin
+*.power.html
+*.gprj.user
+
+# ModelSim / QuestaSim Simulation Artifacts
+work/
+transcript
+*.wlf
+*.vstf
+*.cov
+*.ucdb
+*.mpf
+*.cr.mti
+*.vcd
+
 # Editor & OS Temporary Files
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
 *.tmp
-*.log
+*~
+
+# Local developer sandbox directories
+.omo/
+FINAL FGPA/
+MCU_Contest_2026_Quang/
+simulation fgpa_Toan/

@@ -1,15 +1,15 @@
-# Porygon: Gowin GW1NSR-4C Multi-Mode PWM & UART Telemetry Framework (Da Nang FPGA Contest 2026)
+# Gowin GW1NSR-4C RTL System Specification (Da Nang FPGA Contest 2026)
 
 [![CI](https://github.com/zok213/porygon/actions/workflows/ci.yml/badge.svg)](https://github.com/zok213/porygon/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > **Navigation / Chuyển hướng Ngôn ngữ**:  
-> 🇻🇳 [Tiếng Việt — Thuyết Minh Kiến Trúc Kỹ Thuật Chuyên Sâu](#-bản-thuyết-minh-kiến-trúc-hệ-thống-fpga-tiếng-việt)  
-> 🇬🇧 [English — Full System Architectural Specification](#-fpga-system-architectural-specification-english)
+> 🇻🇳 [Tiếng Việt — Thuyết Minh Kỹ Thuật Chi Tiết Hệ Thống FPGA](#-thuyết-minh-kỹ-thuật-chi-tiết-hệ-thống-fpga-tiếng-việt)  
+> 🇬🇧 [English — Master FPGA System Specification](#-master-fpga-system-specification-english)
 
 ---
 
-# 🇻🇳 BẢN THUYẾT MINH KIẾN TRÚC HỆ THỐNG FPGA (TIẾNG VIỆT)
+# 🇻🇳 THUYẾT MINH KỸ THUẬT CHI TIẾT HỆ THỐNG FPGA (TIẾNG VIỆT)
 
 ## 2. Bảng Tiêu Chí Đánh Giá Cuộc Thi & Phương Án Kỹ Thuật Chi Tiết
 
@@ -123,7 +123,7 @@ flowchart TD
 
 ## 5. Bảng Cấu Hình Chân Ngoại Vi Phần Cứng (Kiwi Nano 4K Pinout)
 
-Toàn bộ chân tín hiệu được khai báo trong tệp ràng buộc vật lý [`FPGA/constr/pwm11.cst`](FPGA/constr/pwm11.cst):
+Toàn bộ chân tín hiệu được khai báo trong tệp ràng buộc vật lý [`constr/pwm11.cst`](constr/pwm11.cst):
 
 | Tên Tín Hiệu | Chân FPGA | Ngân Sách I/O (Bank) | Chuẩn Điện Áp | Cấu Hình Kéo Điện Trở | Dòng Kích (Drive) | Chức Năng Phần Cứng |
 | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
@@ -256,13 +256,13 @@ Dưới đây là hình ảnh chụp thực tế màn hình giám sát Terminal 
 ---
 
 ## 10. Hướng Dẫn Mô Phỏng ModelSim Tự Chứa (Zero-Dependency Quick Start)
-*(Chi tiết tại [`FPGA/sim/README_MODELSIM_SIMULATION.md`](FPGA/sim/README_MODELSIM_SIMULATION.md))*
+*(Chi tiết tại [`sim/README_MODELSIM_SIMULATION.md`](sim/README_MODELSIM_SIMULATION.md))*
 
-Dự án tích hợp sẵn thư viện linh kiện Gowin [`FPGA/src/prim_sim.v`](FPGA/src/prim_sim.v) giúp chạy mô phỏng trơn tru trên mọi máy tính mà không cần cài đặt Gowin EDA:
+Dự án tích hợp sẵn thư viện linh kiện Gowin [`src/prim_sim.v`](src/prim_sim.v) giúp chạy mô phỏng trơn tru trên mọi máy tính mà không cần cài đặt Gowin EDA:
 
 ### 🚀 Chạy Tự Động Bằng 1 Lệnh Tcl Duy Nhất
 1. Mở phần mềm **ModelSim SE 10.6d**.
-2. Chọn menu **`File` $\rightarrow$ `Change Directory...`** $\rightarrow$ Trỏ đến thư mục `FPGA/sim/`.
+2. Chọn menu **`File` $\rightarrow$ `Change Directory...`** $\rightarrow$ Trỏ đến thư mục `sim/`.
 3. Trong cửa sổ **Transcript**, gõ lệnh sau và bấm **Enter**:
    ```tcl
    do run_sim.do
@@ -306,7 +306,7 @@ Dự án tích hợp sẵn thư viện linh kiện Gowin [`FPGA/src/prim_sim.v`]
    - *Giải pháp*: Chia đều thành $2,000$ nấc độ sáng cực mịn, mỗi nấc tăng/giảm $50$ nhịp clock sau mỗi $1\text{ ms}$, đem lại cảm giác thở nhẹ nhàng, êm ái tự nhiên.
 6. **Mô Phỏng Tự Chứa Không Lỗi Thiếu Thư Viện Gowin**:
    - *Vấn đề*: Khi ban giám khảo chấm bài trên ModelSim không cài sẵn Gowin EDA, việc biên dịch `Gowin_PLLVR` sẽ báo lỗi `Module 'PLLVR' is not defined`.
-   - *Giải pháp*: Đính kèm tệp thư viện macro hành vi Gowin [`FPGA/src/prim_sim.v`](FPGA/src/prim_sim.v), bảo đảm biên dịch và chạy mô phỏng 100% độc lập, không phụ thuộc môi trường cài đặt.
+   - *Giải pháp*: Đính kèm tệp thư viện macro hành vi Gowin [`src/prim_sim.v`](src/prim_sim.v), bảo đảm biên dịch và chạy mô phỏng 100% độc lập, không phụ thuộc môi trường cài đặt.
 
 ---
 
@@ -352,7 +352,7 @@ $$T_{\text{cycle}} = (1,000\text{ nấc tăng} \times 1.0\text{ ms}) + (1,000\te
 
 ## 14. Ma Trận Kiểm Thử Tự Động & Hướng Dẫn Mô Phỏng ModelSim
 
-### Ma Trận 25 Chỉ Tiêu Kiểm Thử Tự Động ([`FPGA/sim/tb_top_system_v2.v`](FPGA/sim/tb_top_system_v2.v))
+### Ma Trận 25 Chỉ Tiêu Kiểm Thử Tự Động ([`sim/tb_top_system_v2.v`](sim/tb_top_system_v2.v))
 | Nhóm Kiểm Thử | Kịch Bản Kích Hoạt | Hành Vi Mong Đợi | Bộ Kiểm Tra Tự Động | Kết Quả Thực Tế |
 | :---: | :--- | :--- | :--- | :---: |
 | **TC-01** | Power-on / Reset | Hệ thống về LOW; phát `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | **PASS (11/11 bytes)** |
@@ -373,7 +373,7 @@ $$T_{\text{cycle}} = (1,000\text{ nấc tăng} \times 1.0\text{ ms}) + (1,000\te
 ## 15. Hướng Dẫn Biên Dịch & Nạp Mạch (Gowin EDA)
 
 1. Mở phần mềm **Gowin EDA** (V1.9.9 hoặc V1.9.12 trở lên).
-2. Chọn **File $\rightarrow$ Open Project...** và mở tệp [`FPGA/pwm11.gprj`](FPGA/pwm11.gprj).
+2. Chọn **File $\rightarrow$ Open Project...** và mở tệp [`pwm11.gprj`](pwm11.gprj).
 3. Trong tab **Process**, nhấn đúp vào **Place & Route** $\rightarrow$ Kiểm tra đạt **Success (0 Errors, 0 Warnings)**.
 4. Kết nối cáp USB bo mạch **Kiwi Nano 4K** vào máy tính.
 5. Mở công cụ **Programmer**, chọn thiết bị `GW1NSR-4C`, nạp tệp bitstream `impl/pnr/pwm11.fs` vào bộ nhớ SRAM (hoặc Flash nhúng) của chip FPGA.
@@ -381,7 +381,7 @@ $$T_{\text{cycle}} = (1,000\text{ nấc tăng} \times 1.0\text{ ms}) + (1,000\te
 
 ---
 
-# 🇬🇧 FPGA SYSTEM ARCHITECTURAL SPECIFICATION (ENGLISH)
+# 🇬🇧 MASTER FPGA SYSTEM SPECIFICATION (ENGLISH)
 
 ## 2. Competition Criteria Compliance Matrix
 
@@ -626,13 +626,13 @@ The screen capture below displays real-time telemetry streaming from the **Kiwi 
 ---
 
 ## 10. Zero-Dependency ModelSim Simulation Quick Start
-*(Detailed guide at [`FPGA/sim/README_MODELSIM_SIMULATION.md`](FPGA/sim/README_MODELSIM_SIMULATION.md))*
+*(Detailed guide at [`sim/README_MODELSIM_SIMULATION.md`](sim/README_MODELSIM_SIMULATION.md))*
 
-The project embeds the official Gowin primitive simulation models ([`FPGA/src/prim_sim.v`](FPGA/src/prim_sim.v)), allowing instant simulation in ModelSim without requiring Gowin EDA installation:
+The project embeds the official Gowin primitive simulation models ([`src/prim_sim.v`](src/prim_sim.v)), allowing instant simulation in ModelSim without requiring Gowin EDA installation:
 
 ### 🚀 Single-Command Automated Execution
 1. Open **ModelSim SE 10.6d**.
-2. Select **`File` $\rightarrow$ `Change Directory...`** $\rightarrow$ Navigate to `FPGA/sim/`.
+2. Select **`File` $\rightarrow$ `Change Directory...`** $\rightarrow$ Navigate to `sim/`.
 3. In the **Transcript** window, enter:
    ```tcl
    do run_sim.do
@@ -676,7 +676,7 @@ The project embeds the official Gowin primitive simulation models ([`FPGA/src/pr
    - *Solution*: $1\text{ kHz}$ carrier frequency with 2,000 fine-grained brightness steps ($50$ counts increment per ms) provides silky-smooth, flicker-free illumination.
 6. **Zero-Dependency Portable Simulation**:
    - *Problem*: Third-party evaluation environments lack Gowin EDA primitive simulation libraries, throwing `Module 'PLLVR' is not defined`.
-   - *Solution*: Bundled [`FPGA/src/prim_sim.v`](FPGA/src/prim_sim.v) provides standalone simulation on ModelSim, QuestaSim, and Icarus Verilog.
+   - *Solution*: Bundled [`src/prim_sim.v`](src/prim_sim.v) provides standalone simulation on ModelSim, QuestaSim, and Icarus Verilog.
 
 ---
 
@@ -722,7 +722,7 @@ $$T_{\text{cycle}} = (1,000\text{ steps up} \times 1.0\text{ ms}) + (1,000\text{
 
 ## 14. Automated Verification Matrix (25 Checks) & Waveform Guide
 
-### Automated Verification Matrix ([`FPGA/sim/tb_top_system_v2.v`](FPGA/sim/tb_top_system_v2.v))
+### Automated Verification Matrix ([`sim/tb_top_system_v2.v`](sim/tb_top_system_v2.v))
 | Test Group | Trigger Scenario | Expected System Behavior | Automated Assertion Routine | Verification Status |
 | :---: | :--- | :--- | :--- | :---: |
 | **TC-01** | Power-on / Reset | System initializes to LOW; transmits `"MODE: LOW\r\n"` | `uart_check_message(..., 11)` | **PASS (11/11 bytes)** |
@@ -743,7 +743,7 @@ $$T_{\text{cycle}} = (1,000\text{ steps up} \times 1.0\text{ ms}) + (1,000\text{
 ## 15. Gowin EDA Synthesis & Hardware Flashing Guide
 
 1. Launch **Gowin EDA** (V1.9.9 or V1.9.12+).
-2. Click **File $\rightarrow$ Open Project...** and select [`FPGA/pwm11.gprj`](FPGA/pwm11.gprj).
+2. Click **File $\rightarrow$ Open Project...** and select [`pwm11.gprj`](pwm11.gprj).
 3. In the **Process** tab, double-click **Place & Route** $\rightarrow$ Verify status: **Success (0 Errors, 0 Warnings)**.
 4. Connect the **Kiwi Nano 4K** evaluation board via USB.
 5. Open the **Programmer** tool, select device `GW1NSR-4C`, and program `impl/pnr/pwm11.fs` to SRAM/Flash.
